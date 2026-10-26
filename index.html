@@ -1,0 +1,1205 @@
+<!DOCTYPE html>
+<html lang="ko" class="">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Go Provider 14일 스터디</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = { darkMode: 'class' };
+</script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" />
+<style>
+  html, body { font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Segoe UI", Roboto, sans-serif; }
+  .prose-ko p { line-height: 1.85; }
+  pre[class*="language-"] { font-size: 0.875rem; border-radius: 0.5rem; }
+  .quiz-option { transition: all 0.15s ease; }
+  .quiz-option:hover { transform: translateX(2px); }
+  .day-cell.done::after { content: "✓"; color: #10b981; font-weight: 700; margin-left: 4px; }
+  .scroll-fade::-webkit-scrollbar { width: 6px; }
+  .scroll-fade::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+  .dark .scroll-fade::-webkit-scrollbar-thumb { background: #475569; }
+  [hidden] { display: none !important; }
+  details > summary { list-style: none; cursor: pointer; }
+  details > summary::-webkit-details-marker { display: none; }
+  .kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.75rem; padding: 1px 6px; border-radius: 4px; background: #e2e8f0; color: #0f172a; border: 1px solid #cbd5e1; }
+  .dark .kbd { background: #334155; color: #f1f5f9; border-color: #475569; }
+  .search-hit { background: #fef08a; }
+  .dark .search-hit { background: #854d0e; color: #fef3c7; }
+</style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200 min-h-screen">
+
+<!-- 헤더 -->
+<header class="sticky top-0 z-30 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 shadow-sm">
+  <div class="max-w-screen-2xl mx-auto px-3 sm:px-6 py-3 flex items-center gap-3">
+    <button id="hamburger" class="lg:hidden p-2 rounded hover:bg-slate-100 dark:hover:bg-slate-700" aria-label="메뉴">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+    </button>
+    <div class="flex items-center gap-2 min-w-0">
+      <span class="text-2xl">🐹</span>
+      <h1 class="font-bold text-base sm:text-lg truncate">Go Provider 14일 스터디</h1>
+    </div>
+    <div class="flex-1"></div>
+    <div class="hidden sm:flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+      <span>진도</span>
+      <div class="w-32 h-2 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+        <div id="progressBar" class="h-full bg-emerald-500 transition-all" style="width:0%"></div>
+      </div>
+      <span id="progressText" class="font-mono w-12 text-right">0/14</span>
+    </div>
+    <button id="searchBtn" class="p-2 rounded hover:bg-slate-100 dark:hover:bg-slate-700" title="검색 (Ctrl/⌘+K)">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    </button>
+    <button id="darkToggle" class="p-2 rounded hover:bg-slate-100 dark:hover:bg-slate-700" title="다크모드">
+      <svg id="iconSun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="hidden dark:block"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+      <svg id="iconMoon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="dark:hidden"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    </button>
+  </div>
+  <!-- 모바일 진도 -->
+  <div class="sm:hidden px-4 pb-2 flex items-center gap-2 text-xs text-slate-500">
+    <div class="flex-1 h-1.5 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+      <div id="progressBarMobile" class="h-full bg-emerald-500 transition-all" style="width:0%"></div>
+    </div>
+    <span id="progressTextMobile" class="font-mono">0/14</span>
+  </div>
+</header>
+
+<div class="max-w-screen-2xl mx-auto flex">
+
+  <!-- 사이드바 -->
+  <aside id="sidebar" class="hidden lg:block w-72 shrink-0 border-r border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 h-[calc(100vh-65px)] sticky top-[65px] overflow-y-auto scroll-fade">
+    <div class="p-4">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">커리큘럼</h2>
+        <button id="resetProgress" class="text-xs text-slate-400 hover:text-rose-500" title="진도 초기화">초기화</button>
+      </div>
+      <nav id="sidebarNav" class="space-y-4"></nav>
+    </div>
+  </aside>
+
+  <!-- 모바일 드로어 -->
+  <div id="drawer" class="lg:hidden fixed inset-0 z-40 hidden">
+    <div id="drawerBg" class="absolute inset-0 bg-black/50"></div>
+    <aside class="absolute left-0 top-0 bottom-0 w-72 bg-white dark:bg-slate-800 overflow-y-auto scroll-fade">
+      <div class="p-4">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-sm font-semibold text-slate-500 uppercase">커리큘럼</h2>
+          <button id="resetProgressMobile" class="text-xs text-slate-400 hover:text-rose-500">초기화</button>
+        </div>
+        <nav id="sidebarNavMobile" class="space-y-4"></nav>
+      </div>
+    </aside>
+  </div>
+
+  <!-- 본문 -->
+  <main class="flex-1 min-w-0 px-3 sm:px-6 lg:px-10 py-6 sm:py-10">
+    <article id="content" class="max-w-3xl mx-auto"></article>
+    <nav class="max-w-3xl mx-auto mt-12 flex items-center justify-between gap-4">
+      <button id="prevDay" class="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 text-sm">← 이전</button>
+      <button id="markDone" class="px-5 py-2 rounded-lg bg-emerald-500 text-white text-sm font-semibold hover:bg-emerald-600">오늘 완료 ✓</button>
+      <button id="nextDay" class="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 text-sm">다음 →</button>
+    </nav>
+    <footer class="max-w-3xl mx-auto mt-16 pt-8 border-t border-slate-200 dark:border-slate-700 text-xs text-slate-400 text-center">
+      <p>Go Provider 14일 스터디 · Java 개발자용 · 모든 진도는 브라우저에 저장돼요.</p>
+      <p class="mt-1">단축키: <span class="kbd">←</span> 이전 · <span class="kbd">→</span> 다음 · <span class="kbd">Ctrl/⌘+K</span> 검색</p>
+    </footer>
+  </main>
+</div>
+
+<!-- 검색 모달 -->
+<div id="searchModal" class="fixed inset-0 z-50 hidden">
+  <div id="searchBg" class="absolute inset-0 bg-black/50"></div>
+  <div class="relative max-w-xl mx-auto mt-24 bg-white dark:bg-slate-800 rounded-xl shadow-2xl overflow-hidden">
+    <div class="p-3 border-b border-slate-200 dark:border-slate-700 flex items-center gap-2">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="searchInput" type="text" placeholder="키워드로 검색 (예: slice, Computed, eAPI)" class="flex-1 bg-transparent outline-none text-sm" autofocus />
+      <span class="kbd">ESC</span>
+    </div>
+    <div id="searchResults" class="max-h-96 overflow-y-auto scroll-fade p-2"></div>
+  </div>
+</div>
+
+<script>
+/* ===== 커리큘럼 데이터 ===== */
+const curriculum = {
+ "weeks": [
+  {
+   "title": "Week 1 — Java 개발자를 위한 Go 기초",
+   "subtitle": "provider 코드를 읽는 데 필요한 문법만 골라서",
+   "days": [
+    {
+     "id": 1,
+     "title": "Go 설치와 첫 프로그램",
+     "goal": "Go를 설치하고 모듈을 만들어 첫 프로그램을 실행해요. 설치가 어려우면 Go Playground로 시작해도 돼요.",
+     "concept": "Go는 구글이 만든 컴파일 언어예요. Java와 가장 큰 차이는 **JVM이 없다**는 점이에요. `go build`를 하면 운영체제별 실행 파일 하나가 나오고, 그 파일만 복사하면 어디서든 실행돼요. Terraform provider가 Go로 많이 만들어지는 이유도 이거예요. Terraform이 provider 실행 파일 하나만 내려받아 띄우면 되거든요.\n\n문법은 일부러 작게 만들어졌어요. 클래스, 상속, 오버로딩, 예외, 애노테이션이 없어요. 대신 struct, 인터페이스, 에러 반환값으로 같은 일을 해요. 처음에는 \"이게 다야?\" 싶은데, 읽는 사람 입장에서는 숨은 동작이 적어서 코드를 따라가기 쉬워요.\n\n| Go | Java/Gradle |\n|---|---|\n| go.mod | build.gradle (모듈 이름 + 의존성) |\n| go.sum | 의존성 lock 파일 |\n| package main + func main() | public static void main |\n| go run . | ./gradlew bootRun |\n| go build | ./gradlew build (결과는 exe 하나) |\n| gofmt | Spotless (Go는 포맷이 딱 하나로 정해져 있음) |\n\n**모듈**은 go.mod가 있는 폴더 전체예요. 첫 줄의 `module example.com/hello`가 모듈 이름이고, 다른 패키지를 import할 때 이 이름이 경로 앞부분이 돼요. 실행할 프로그램은 반드시 `package main` 안에 `func main()`이 있어야 해요.\n\n**gofmt**는 Go 표준 포맷터예요. 들여쓰기는 탭, 중괄호 위치도 하나로 정해져 있어서 팀마다 스타일 논쟁이 없어요. VS Code의 Go 확장은 저장할 때 자동으로 적용해 줘요.\n\n설치가 번거로우면 오늘은 **Go Playground(go.dev/play)**에서 해도 충분해요. 브라우저에서 코드를 붙여 넣고 Run을 누르면 실행되고, 테스트 함수도 돌려 줘요. Week 1 실습은 전부 Playground로 할 수 있어요.",
+     "code": [
+      {
+       "lang": "powershell",
+       "text": "# 1) go.dev/dl 에서 Windows용 .msi를 받아 설치한 뒤, 새 터미널에서\ngo version\n\n# 2) 첫 모듈 만들기\nmkdir hello\ncd hello\ngo mod init example.com/hello"
+      },
+      {
+       "lang": "go",
+       "text": "// main.go\npackage main\n\nimport \"fmt\"\n\nfunc main() {\n\tname := \"Go\"\n\tfmt.Printf(\"안녕하세요, %s!\\n\", name)\n}"
+      },
+      {
+       "lang": "powershell",
+       "text": "go run .        # 컴파일 후 바로 실행\ngo build        # hello.exe 생성\ngofmt -l .      # 포맷이 안 맞는 파일 목록\ngofmt -w .      # 포맷 적용"
+      }
+     ],
+     "confusions": [
+      "`go run main.go`와 `go run .`은 달라요. 파일이 여러 개인 패키지는 `go run .`처럼 폴더를 넘겨야 다른 파일의 함수까지 같이 컴파일돼요.",
+      "중괄호 `{`를 다음 줄에 쓰면 컴파일 에러가 나요. Go는 줄 끝에 세미콜론을 자동으로 넣기 때문에 `func main()` 뒤에 줄을 바꾸면 문장이 끝난 것으로 봐요.",
+      "안 쓰는 import나 안 쓰는 지역 변수가 있으면 경고가 아니라 **컴파일 에러**예요. 잠깐 막아 두려면 `_ = x`처럼 빈 식별자에 대입해요."
+     ],
+     "quiz": [
+      {
+       "q": "go.mod 파일의 역할로 가장 가까운 것은?",
+       "options": [
+        "Dockerfile",
+        "build.gradle",
+        "application.properties",
+        ".gitignore"
+       ],
+       "answer": 1,
+       "explain": "모듈 이름과 의존성 버전을 적는 파일이라 build.gradle에 해당해요. go.sum은 lock 파일 역할이에요."
+      },
+      {
+       "q": "안 쓰는 import가 남아 있을 때 Go 컴파일러는?",
+       "options": [
+        "경고만 출력",
+        "자동으로 지움",
+        "컴파일 에러",
+        "런타임에 에러"
+       ],
+       "answer": 2,
+       "explain": "Go는 안 쓰는 import와 지역 변수를 컴파일 에러로 처리해요."
+      },
+      {
+       "q": "실행 가능한 프로그램의 진입점 함수가 들어가야 하는 패키지 이름은?",
+       "short": true,
+       "answer": "main",
+       "explain": "package main 안의 func main()이 진입점이에요."
+      }
+     ]
+    },
+    {
+     "id": 2,
+     "title": "변수, 타입, zero value, 공개 범위",
+     "goal": "변수 선언 두 가지 방식과 zero value를 이해하고, 대소문자로 공개 범위가 정해지는 규칙을 익혀요.",
+     "concept": "변수는 두 가지로 선언해요. `var count int`처럼 타입을 적는 방식과, `count := 0`처럼 값에서 타입을 추론하는 **짧은 선언**이에요. `:=`는 함수 안에서만 쓸 수 있고, 패키지 수준(함수 밖)에서는 `var`를 써야 해요.\n\nGo에는 null이 들어간 \"초기화 안 된 변수\"가 없어요. 선언만 하면 타입별 **zero value**가 자동으로 들어가요. 문자열은 `\"\"`, 숫자는 `0`, bool은 `false`, 포인터·슬라이스·맵·인터페이스는 `nil`이에요. struct는 모든 필드가 각자의 zero value로 채워져요.\n\nzero value는 편리하지만 버그의 원인도 돼요. 예를 들어 `var state Model`이라고 선언만 하고 실제 값을 읽어 오는 걸 잊으면, 컴파일러는 아무 말도 안 해요. 그 상태로 비교하면 \"모든 필드가 빈 값\"인 state와 비교하게 돼요. Week 2에서 이 패턴이 실제 provider 버그로 나와요.\n\n**공개 범위는 이름의 첫 글자로 정해요.** 대문자로 시작하면 다른 패키지에서 보이고(exported), 소문자면 같은 패키지 안에서만 보여요. struct 필드도 마찬가지예요. `public`, `private` 키워드가 없어요.\n\n| Go | Java |\n|---|---|\n| func CreateCommands() | public 메서드 |\n| func extractData() | package-private 메서드 |\n| type Model struct { Name string } | public 필드 |\n| type Model struct { name string } | package-private 필드 |\n\n타입 변환은 항상 명시적이에요. int와 int64를 그냥 더할 수 없고 `int64(a) + b`처럼 바꿔야 해요. 숫자와 문자열 사이는 `strconv` 패키지를 써요. `strconv.Itoa(10)`은 \"10\", `strconv.Atoi(\"10\")`은 10과 에러를 돌려줘요.\n\n상수는 `const`로 선언해요. 여러 개를 묶을 때는 괄호를 써요. Java의 enum 대신 상수 묶음을 쓰는 경우가 많아요.",
+     "code": [
+      {
+       "lang": "go",
+       "text": "package main\n\nimport (\n\t\"fmt\"\n\t\"strconv\"\n)\n\nconst DefaultVRF = \"default\" // 대문자: 다른 패키지에서 보임\n\ntype Loopback struct {\n\tID   string\n\tCidr string\n\tVRF  string\n}\n\nfunc main() {\n\tvar lb Loopback         // 선언만: 모든 필드가 \"\"\n\tfmt.Printf(\"%+v\\n\", lb) // {ID: Cidr: VRF:}\n\n\tlb.ID = \"1\"\n\tvrf := lb.VRF // 짧은 선언, 타입은 string으로 추론\n\tif vrf == \"\" {\n\t\tvrf = DefaultVRF\n\t}\n\tfmt.Println(lb.ID, vrf)\n\n\tn, err := strconv.Atoi(\"42\")\n\tfmt.Println(n+1, err) // 43 <nil>\n\tfmt.Println(\"Loopback\" + strconv.Itoa(n))\n}"
+      }
+     ],
+     "confusions": [
+      "`x := 1`을 같은 범위에서 두 번 쓰면 에러예요. 이미 있는 변수에는 `=`를 써요. 단, 왼쪽에 새 변수가 하나라도 있으면 `a, err := ...`처럼 다시 `:=`를 쓸 수 있어요. 그래서 `err`가 여러 번 `:=`로 등장해도 정상이에요.",
+      "`%v`는 값, `%+v`는 struct 필드 이름까지, `%q`는 따옴표로 감싼 문자열을 출력해요. 빈 문자열을 디버깅할 때 `%q`가 특히 유용해요.",
+      "문자열 비교는 `==`로 해요. Java처럼 `.equals()`를 쓸 필요가 없어요."
+     ],
+     "quiz": [
+      {
+       "q": "`var s string`으로 선언만 한 변수 s의 값은?",
+       "options": [
+        "nil",
+        "\"\" (빈 문자열)",
+        "\"null\"",
+        "컴파일 에러"
+       ],
+       "answer": 1,
+       "explain": "문자열의 zero value는 빈 문자열이에요. Go의 string은 nil이 될 수 없어요."
+      },
+      {
+       "q": "다른 패키지에서 호출할 수 있는 함수 이름은?",
+       "options": [
+        "parseConfig",
+        "_ParseConfig",
+        "ParseConfig",
+        "parse_config"
+       ],
+       "answer": 2,
+       "explain": "첫 글자가 대문자여야 exported예요."
+      },
+      {
+       "q": "문자열 \"10\"을 정수로 바꾸는 strconv 함수 이름은?",
+       "short": true,
+       "answer": "Atoi, strconv.Atoi",
+       "explain": "Atoi는 ASCII to integer의 줄임말이에요. 반대 방향은 Itoa예요."
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "title": "함수와 에러 처리",
+     "goal": "여러 값을 반환하는 함수와, 예외 대신 error를 반환해서 처리하는 Go의 기본 패턴을 익혀요.",
+     "concept": "Go 함수는 **값을 여러 개 반환**할 수 있어요. 그래서 \"결과와 에러를 같이 돌려준다\"가 기본 패턴이 됐어요. 마지막 반환값을 `error` 타입으로 두고, 성공이면 `nil`, 실패면 에러 값을 돌려줘요.\n\nGo에는 try/catch가 없어요. 호출한 쪽이 매번 `if err != nil { ... }`로 확인하고, 처리할 수 없으면 위로 다시 반환해요. 코드가 길어 보이지만 \"어디서 실패할 수 있는지\"가 눈에 다 보이는 장점이 있어요.\n\n```go\nresult, err := doSomething()\nif err != nil {\n\treturn fmt.Errorf(\"doSomething 실패: %w\", err)\n}\n```\n\n`fmt.Errorf`의 `%w`는 원래 에러를 감싸서(wrap) 보존해요. Java의 `new RuntimeException(\"메시지\", cause)`와 같은 역할이에요. 나중에 `errors.Is`, `errors.As`로 감싼 에러 안을 확인할 수 있어요.\n\n**주의할 점은 에러 확인을 빠뜨려도 컴파일러가 막지 않는다는 거예요.** `_, _ = send()`처럼 버리거나, 에러를 받아 놓고 로그만 찍고 계속 진행하면 \"에러를 삼키는\" 버그가 생겨요. 장비에 명령을 보냈는데 실패를 무시하면, Terraform은 성공한 줄 알고 state를 저장해요.\n\n`panic`도 있긴 해요. 하지만 Java의 예외처럼 흐름 제어에 쓰지 않아요. 배열 범위 초과, nil 포인터 접근처럼 \"프로그램 버그\"일 때 나고, provider에서 panic이 나면 Terraform run 전체가 비정상 종료돼요. 일반적인 실패는 항상 error로 돌려줘요.\n\n반환값에 이름을 붙일 수도 있어요(named return). `func parse(s string) (id int, err error)`처럼 쓰면 id와 err가 함수 시작부터 zero value로 선언된 변수가 돼요.",
+     "code": [
+      {
+       "lang": "go",
+       "text": "package main\n\nimport (\n\t\"errors\"\n\t\"fmt\"\n\t\"strconv\"\n)\n\nvar ErrOutOfRange = errors.New(\"VLAN ID는 1~4094 사이여야 해요\")\n\nfunc parseVlanID(s string) (int, error) {\n\tid, err := strconv.Atoi(s)\n\tif err != nil {\n\t\treturn 0, fmt.Errorf(\"숫자가 아니에요 %q: %w\", s, err)\n\t}\n\tif id < 1 || id > 4094 {\n\t\treturn 0, ErrOutOfRange\n\t}\n\treturn id, nil\n}\n\nfunc main() {\n\tfor _, in := range []string{\"100\", \"abc\", \"5000\"} {\n\t\tid, err := parseVlanID(in)\n\t\tif err != nil {\n\t\t\tfmt.Println(\"에러:\", err, \"/ 범위 에러인가?\", errors.Is(err, ErrOutOfRange))\n\t\t\tcontinue\n\t\t}\n\t\tfmt.Println(\"VLAN\", id)\n\t}\n}"
+      }
+     ],
+     "confusions": [
+      "에러를 확인한 뒤 `return`을 빼먹는 실수가 흔해요. 에러 메시지만 남기고 다음 줄로 넘어가면 실패한 결과로 계속 진행돼요. Terraform provider에서는 `resp.Diagnostics.AddError(...)` 다음에 반드시 `return`이 와야 해요.",
+      "에러 메시지는 소문자로 시작하고 마침표를 붙이지 않는 게 Go 관례예요. 감싸서 이어 붙이면 문장 중간에 들어가기 때문이에요.",
+      "`err == nil`이면 성공이에요. Java 습관대로 반대로 읽지 않게 조심하세요."
+     ],
+     "quiz": [
+      {
+       "q": "Go에서 일반적인 실패(파일 없음, 장비 응답 에러)를 알리는 표준 방법은?",
+       "options": [
+        "panic 호출",
+        "error 값을 반환",
+        "전역 변수에 기록",
+        "throw"
+       ],
+       "answer": 1,
+       "explain": "실패는 error 반환값으로 알려요. panic은 프로그램 버그용이에요."
+      },
+      {
+       "q": "fmt.Errorf에서 원래 에러를 감싸 보존하는 서식 동사는?",
+       "options": [
+        "%v",
+        "%s",
+        "%w",
+        "%e"
+       ],
+       "answer": 2,
+       "explain": "%w로 감싸야 errors.Is/As로 원래 에러를 확인할 수 있어요."
+      },
+      {
+       "q": "에러가 없을 때 error 반환값에 들어가는 값은? (영문 3글자)",
+       "short": true,
+       "answer": "nil",
+       "explain": "error는 인터페이스라서 zero value가 nil이에요."
+      }
+     ]
+    },
+    {
+     "id": 4,
+     "title": "slice, map, 문자열 다루기",
+     "goal": "provider 코드에 가장 많이 나오는 slice·map·strings 패키지를 익히고, 명령 목록을 만드는 함수를 직접 써 봐요.",
+     "concept": "**slice**는 Java의 ArrayList에 해당해요. `[]string{\"a\", \"b\"}`로 만들고 `append`로 추가해요. 가장 큰 차이는 **append가 새 slice를 반환한다**는 점이에요. 반드시 `cmds = append(cmds, \"end\")`처럼 다시 대입해야 해요. 대입하지 않으면 추가한 값이 사라질 수 있어요.\n\nslice 여러 개를 이어 붙일 때는 `append(a, b...)`처럼 뒤에 `...`을 붙여요. 함수에 slice를 가변 인자로 펼쳐 넘기는 문법이에요. Terraform provider 코드에서 `resp.Diagnostics.Append(diags...)`가 자주 보이는 이유예요.\n\n**map**은 HashMap이에요. `m := map[string]int{}`로 만들고 `m[\"a\"] = 1`로 넣어요. 없는 키를 읽으면 에러 대신 zero value가 나와요. 그래서 키가 실제로 있는지 알고 싶으면 `v, ok := m[\"a\"]`처럼 두 번째 값을 받아요. 이 \"comma ok\" 패턴은 정말 자주 나와요.\n\n**map의 range 순서는 매번 무작위**예요. 일부러 섞도록 만들어져 있어요. 장비에 보낼 명령을 map을 돌며 만들면 실행할 때마다 순서가 바뀌어서 plan 결과가 흔들릴 수 있어요. 순서가 중요하면 키를 slice에 모아 `sort.Strings`로 정렬한 뒤 돌려요.\n\n반복문은 `for` 하나뿐이에요. `for i := 0; i < n; i++`, `for cond {}`(while), `for _, v := range list`(for-each) 모두 for로 써요. range는 인덱스와 값을 함께 주고, 안 쓰는 쪽은 `_`로 버려요.\n\n장비 CLI 출력을 다룰 때는 `strings` 패키지를 많이 써요. `Split`(줄 나누기), `TrimSpace`(앞뒤 공백 제거), `HasPrefix`(시작 문자열 확인), `TrimPrefix`(앞부분 잘라내기), `Contains`, `Fields`(공백 기준 분리)를 기억해 두세요.",
+     "code": [
+      {
+       "lang": "go",
+       "text": "package main\n\nimport \"fmt\"\n\ntype Loopback struct {\n\tID   string\n\tCidr string\n\tVRF  string\n}\n\n// 실습: 아래 출력이 나오게 createCommands를 완성해 보세요.\n// VRF나 Cidr가 비어 있으면 그 줄은 넣지 않아요.\n// EOS에서는 VRF를 바꾸면 IP가 지워지므로 vrf 줄이 ip address보다 먼저 와야 해요.\n//\n// [enable configure terminal interface Loopback1 ip address 10.0.0.1/32 end write memory]\n// [enable configure terminal interface Loopback2 vrf blue ip address 10.0.0.2/32 end write memory]\nfunc createCommands(lb Loopback) []string {\n\treturn nil\n}\n\nfunc main() {\n\tfmt.Println(createCommands(Loopback{ID: \"1\", Cidr: \"10.0.0.1/32\"}))\n\tfmt.Println(createCommands(Loopback{ID: \"2\", Cidr: \"10.0.0.2/32\", VRF: \"blue\"}))\n}"
+      },
+      {
+       "lang": "go",
+       "text": "// 정답 예시\nfunc createCommands(lb Loopback) []string {\n\tcmds := []string{\n\t\t\"enable\",\n\t\t\"configure terminal\",\n\t\tfmt.Sprintf(\"interface Loopback%s\", lb.ID),\n\t}\n\tif lb.VRF != \"\" {\n\t\tcmds = append(cmds, \"vrf \"+lb.VRF)\n\t}\n\tif lb.Cidr != \"\" {\n\t\tcmds = append(cmds, \"ip address \"+lb.Cidr)\n\t}\n\treturn append(cmds, \"end\", \"write memory\")\n}"
+      },
+      {
+       "lang": "go",
+       "text": "// map의 comma ok와 정렬된 순회\ndevices := map[string]string{\"leaf2\": \"10.0.0.2\", \"leaf1\": \"10.0.0.1\"}\n\nif ip, ok := devices[\"leaf3\"]; !ok {\n\tfmt.Println(\"leaf3 없음\")\n} else {\n\tfmt.Println(ip)\n}\n\nnames := make([]string, 0, len(devices))\nfor name := range devices {\n\tnames = append(names, name)\n}\nsort.Strings(names) // import \"sort\"\nfor _, name := range names {\n\tfmt.Println(name, devices[name]) // 항상 leaf1, leaf2 순서\n}"
+      }
+     ],
+     "confusions": [
+      "nil slice에도 append할 수 있어요. `var cmds []string` 다음에 바로 `cmds = append(cmds, \"x\")`가 돼요. 하지만 nil map에 값을 넣으면 panic이 나요. map은 반드시 `make(map[string]int)`나 `map[string]int{}`로 만들어서 써요.",
+      "`for _, v := range list`의 v는 복사본이에요. `v.Name = \"x\"`로 바꿔도 원본 slice는 그대로예요. 원본을 바꾸려면 `list[i].Name = \"x\"`처럼 인덱스로 접근해요.",
+      "`strings.HasPrefix(\"interface Loopback10\", \"interface Loopback1\")`은 true예요. 번호가 붙은 이름을 찾을 때 HasPrefix를 쓰면 Loopback1을 찾다가 Loopback10까지 걸려요. Day 7에서 이 버그를 직접 고쳐요."
+     ],
+     "quiz": [
+      {
+       "q": "다음 중 cmds에 \"end\"가 확실히 추가되는 코드는?",
+       "options": [
+        "append(cmds, \"end\")",
+        "cmds.add(\"end\")",
+        "cmds = append(cmds, \"end\")",
+        "cmds += \"end\""
+       ],
+       "answer": 2,
+       "explain": "append는 새 slice를 반환하니 다시 대입해야 해요."
+      },
+      {
+       "q": "map을 range로 돌 때 순서는?",
+       "options": [
+        "넣은 순서",
+        "키 정렬 순서",
+        "매번 달라질 수 있음",
+        "해시값 순서로 항상 같음"
+       ],
+       "answer": 2,
+       "explain": "Go는 map 순회 순서를 일부러 무작위로 만들어요. 순서가 필요하면 키를 정렬해요."
+      },
+      {
+       "q": "`v, ok := m[key]`에서 키가 없을 때 ok의 값은?",
+       "short": true,
+       "answer": "false",
+       "explain": "키가 없으면 v는 zero value, ok는 false예요."
+      }
+     ]
+    },
+    {
+     "id": 5,
+     "title": "struct, 메서드, 포인터",
+     "goal": "class 대신 struct와 메서드로 코드를 묶는 방식, 그리고 포인터를 써야 하는 이유를 이해해요.",
+     "concept": "Go에는 class가 없어요. 데이터는 **struct**로 정의하고, 동작은 struct에 붙인 **메서드**로 정의해요. 메서드는 함수 이름 앞에 **리시버**를 적어서 만들어요.\n\n```go\ntype Client struct {\n\tEndpoint string\n}\nfunc (c *Client) Send(cmds []string) error { ... }\n```\n\n`(c *Client)`가 리시버예요. Java의 `this`와 같은 역할인데 이름을 직접 정해요. 보통 타입 이름의 첫 글자를 소문자로 써요.\n\n**Go의 struct는 기본적으로 값 복사**예요. Java에서는 객체를 넘기면 참조가 넘어가지만, Go에서 struct를 함수에 넘기면 통째로 복사돼요. 함수 안에서 필드를 바꿔도 원본은 그대로예요. 원본을 바꾸게 하려면 **포인터**를 넘겨요.\n\n| 표기 | 뜻 |\n|---|---|\n| &plan | plan 변수의 주소 (포인터 만들기) |\n| *Model | Model을 가리키는 포인터 타입 |\n| p.Name | 포인터여도 점(.)으로 필드 접근 (자동 역참조) |\n| nil | 아무것도 가리키지 않는 포인터 |\n\nTerraform provider에서 `req.Plan.Get(ctx, &plan)`처럼 `&`를 붙이는 이유가 이거예요. Get 함수가 plan 변수 안을 채워 줘야 하니까 주소를 넘기는 거예요.\n\n리시버도 값(`func (c Client)`)과 포인터(`func (c *Client)`) 두 가지가 있어요. 필드를 바꾸거나 struct가 크면 포인터 리시버를 써요. 한 타입의 메서드는 보통 한 가지로 통일해요. provider 코드는 거의 다 포인터 리시버예요.\n\nstruct 필드 뒤에 백틱으로 감싼 문자열을 붙일 수 있는데, 이걸 **태그**라고 해요. 아래 예제의 `json:\"cidr\"` 태그는 JSON으로 바꿀 때 쓸 필드 이름을 정해요. Java의 `@JsonProperty(\"cidr\")`과 같아요. Terraform provider는 `tfsdk:\"cidr\"` 태그로 HCL 속성과 필드를 연결해요.\n\n생성자는 따로 없어요. `NewClient(...)`처럼 New로 시작하는 함수를 만들어 struct를 초기화해서 돌려주는 게 관례예요.",
+     "code": [
+      {
+       "lang": "go",
+       "text": "package main\n\nimport \"fmt\"\n\ntype Loopback struct {\n\tID   string `json:\"loopback_id\"`\n\tCidr string `json:\"cidr\"`\n}\n\nfunc setCidrByValue(lb Loopback, cidr string) { lb.Cidr = cidr }    // 복사본만 바뀜\nfunc setCidrByPtr(lb *Loopback, cidr string)  { lb.Cidr = cidr }    // 원본이 바뀜\n\ntype Device struct {\n\tName      string\n\tLoopbacks []Loopback\n}\n\nfunc NewDevice(name string) *Device { // 생성자 관례\n\treturn &Device{Name: name}\n}\n\nfunc (d *Device) Add(lb Loopback) { // 포인터 리시버\n\td.Loopbacks = append(d.Loopbacks, lb)\n}\n\nfunc main() {\n\tlb := Loopback{ID: \"1\"}\n\tsetCidrByValue(lb, \"10.0.0.1/32\")\n\tfmt.Printf(\"%q\\n\", lb.Cidr) // \"\"\n\tsetCidrByPtr(&lb, \"10.0.0.1/32\")\n\tfmt.Printf(\"%q\\n\", lb.Cidr) // \"10.0.0.1/32\"\n\n\td := NewDevice(\"leaf1\")\n\td.Add(lb)\n\tfmt.Println(d.Name, len(d.Loopbacks)) // leaf1 1\n}"
+      }
+     ],
+     "confusions": [
+      "nil 포인터의 필드에 접근하면 panic이 나요. 맵에서 꺼낸 포인터, 함수가 돌려준 포인터는 쓰기 전에 nil인지 확인하는 습관을 들이세요.",
+      "`var p *Device`는 nil 포인터예요. struct를 만들려면 `&Device{}`나 `new(Device)`를 써요.",
+      "struct 태그는 백틱 안의 문자열이라 오타가 나도 컴파일 에러가 안 나요. `tfsdk:\"cidr\"`를 `tfsdk:\"cdir\"`로 잘못 쓰면 실행할 때야 에러가 나요."
+     ],
+     "quiz": [
+      {
+       "q": "struct를 함수에 그냥(포인터 없이) 넘기면?",
+       "options": [
+        "참조가 전달됨",
+        "통째로 복사됨",
+        "컴파일 에러",
+        "읽기 전용으로 전달됨"
+       ],
+       "answer": 1,
+       "explain": "Go는 값 복사가 기본이에요. 원본을 바꾸려면 포인터를 넘겨요."
+      },
+      {
+       "q": "Terraform provider에서 `req.Plan.Get(ctx, &plan)`에 &를 붙이는 이유는?",
+       "options": [
+        "문법상 필수 장식",
+        "Get이 plan 변수 안을 채우게 하려고",
+        "plan을 읽기 전용으로 만들려고",
+        "메모리를 아끼려고"
+       ],
+       "answer": 1,
+       "explain": "주소를 넘겨야 Get 함수가 호출한 쪽의 plan 변수를 채울 수 있어요."
+      },
+      {
+       "q": "struct 필드와 HCL 속성을 연결하는 Terraform framework의 태그 키는? (예: ___:\"cidr\")",
+       "short": true,
+       "answer": "tfsdk",
+       "explain": "`tfsdk:\"cidr\"`처럼 써요. JSON의 `json:\"...\"` 태그와 같은 방식이에요."
+      }
+     ]
+    },
+    {
+     "id": 6,
+     "title": "인터페이스와 타입 단언",
+     "goal": "implements 없이 자동으로 구현되는 인터페이스와, JSON 응답을 다룰 때 자주 쓰는 타입 단언을 익혀요.",
+     "concept": "Go 인터페이스는 **메서드 목록**이에요. 어떤 타입이 그 메서드를 전부 갖고 있으면 `implements`를 쓰지 않아도 자동으로 그 인터페이스를 구현한 것이 돼요. 이걸 구조적 타이핑이라고 해요.\n\n```go\ntype Resource interface {\n\tCreate() error\n\tDelete() error\n}\n```\n\nCreate와 Delete 메서드가 있는 타입이면 무엇이든 Resource 변수에 넣을 수 있어요. Terraform framework도 이 방식이에요. framework가 `resource.Resource` 인터페이스를 정해 두고, 우리가 만든 struct가 그 메서드(Metadata, Schema, Create, Read, Update, Delete)를 갖추면 리소스로 인정돼요.\n\n그런데 implements가 없으니 메서드 하나를 빠뜨려도 쓰는 곳까지 가야 에러가 나요. 그래서 이런 관용구를 파일 맨 위에 둬요.\n\n```go\nvar _ resource.Resource = &LoopbackResource{}\n```\n\n\"이 타입을 resource.Resource에 대입할 수 있는지 컴파일할 때 확인하라\"는 뜻이에요. 값은 `_`로 버리니 실행에는 영향이 없어요.\n\n`any`(옛 표기 `interface{}`)는 메서드가 하나도 없는 인터페이스라서 모든 값을 담을 수 있어요. Java의 Object와 비슷해요. 구조를 모르는 JSON을 `map[string]any`로 받는 경우가 많고, 꺼낼 때는 **타입 단언**으로 실제 타입을 지정해요.\n\n```go\nout, ok := result[\"output\"].(string)\n```\n\n`x.(string)`만 쓰면 타입이 다를 때 **panic**이 나요. 반드시 `v, ok := x.(T)` 형태로 받아서 ok를 확인하세요. 여러 타입을 분기할 때는 `switch v := x.(type)` 문법을 써요.\n\nJSON 함정 하나: `map[string]any`로 받은 JSON 숫자는 int가 아니라 **float64**예요. `result[\"vlanId\"].(int)`는 항상 실패해요.",
+     "code": [
+      {
+       "lang": "go",
+       "text": "package main\n\nimport (\n\t\"encoding/json\"\n\t\"fmt\"\n)\n\nfunc main() {\n\t// eAPI text 형식 응답의 한 결과와 비슷한 모양\n\traw := `{\"output\": \"interface Loopback1\\n   ip address 10.0.0.1/32\\n\", \"vlanId\": 100}`\n\n\tvar result map[string]any\n\tif err := json.Unmarshal([]byte(raw), &result); err != nil {\n\t\tfmt.Println(\"JSON 에러:\", err)\n\t\treturn\n\t}\n\n\tout, ok := result[\"output\"].(string) // 안전한 타입 단언\n\tif !ok {\n\t\tfmt.Println(\"output이 문자열이 아니에요\")\n\t\treturn\n\t}\n\tfmt.Print(out)\n\n\tswitch v := result[\"vlanId\"].(type) {\n\tcase float64:\n\t\tfmt.Println(\"숫자(float64):\", int(v))\n\tcase string:\n\t\tfmt.Println(\"문자열:\", v)\n\tdefault:\n\t\tfmt.Printf(\"예상 못 한 타입 %T\\n\", v)\n\t}\n}"
+      }
+     ],
+     "confusions": [
+      "`result[\"output\"].(string)`을 ok 없이 쓰면, 장비가 에러 응답을 주거나 형식이 바뀌었을 때 provider 프로세스가 panic으로 죽어요. 사용자는 친절한 에러 대신 스택 트레이스를 보게 돼요.",
+      "인터페이스 변수에 nil 포인터를 넣으면 그 인터페이스는 nil이 아니에요. `var p *MyErr = nil; var err error = p` 다음 `err != nil`은 true예요. 에러를 돌려줄 때는 nil을 직접 반환하세요.",
+      "작은 인터페이스가 Go 스타일이에요. 메서드 1~3개짜리 인터페이스(io.Reader, error 등)를 조합해서 써요."
+     ],
+     "quiz": [
+      {
+       "q": "Go에서 어떤 타입이 인터페이스를 구현하려면?",
+       "options": [
+        "implements 키워드 선언",
+        "인터페이스를 embed",
+        "인터페이스의 메서드를 모두 가지면 자동",
+        "@Override 표시"
+       ],
+       "answer": 2,
+       "explain": "메서드 집합만 맞으면 자동으로 구현한 것이 돼요."
+      },
+      {
+       "q": "map[string]any로 받은 JSON의 숫자 100은 어떤 타입인가요?",
+       "options": [
+        "int",
+        "int64",
+        "float64",
+        "string"
+       ],
+       "answer": 2,
+       "explain": "encoding/json은 any로 받을 때 숫자를 float64로 만들어요."
+      },
+      {
+       "q": "타입이 다를 때 panic 대신 false를 받으려면 `v, ___ := x.(string)`의 빈칸에 관례적으로 쓰는 이름은?",
+       "short": true,
+       "answer": "ok",
+       "explain": "comma ok 패턴이에요. map 조회와 같은 형태예요."
+      }
+     ]
+    },
+    {
+     "id": 7,
+     "title": "패키지와 테스트 · 미니 프로젝트",
+     "goal": "패키지 구조와 go test 사용법을 익히고, 장비 출력 파서의 버그 두 개를 고친 뒤 테이블 테스트로 확인해요.",
+     "concept": "**폴더 하나가 패키지 하나**예요. 같은 폴더의 .go 파일은 모두 같은 `package` 이름을 쓰고, import 없이 서로의 함수와 타입을 써요. 그래서 provider 코드에서는 resource 파일이 commands 파일의 함수를 import 없이 바로 불러요.\n\n`internal`이라는 이름의 폴더는 특별해요. 그 안의 패키지는 같은 모듈 안에서만 import할 수 있어요. 외부에 공개하지 않을 코드를 넣는 곳이에요. Terraform provider는 보통 모든 코드를 `internal/provider/`에 둬요.\n\n테스트는 `_test.go`로 끝나는 파일에 `func TestXxx(t *testing.T)` 형태로 써요. JUnit 같은 별도 라이브러리 없이 표준 `testing` 패키지로 해요. assert도 없어서 `if got != want { t.Errorf(...) }`로 직접 비교해요.\n\nGo에서 가장 많이 쓰는 형태는 **테이블 테스트**예요. 입력과 기대값을 struct slice로 표처럼 적고 반복해요. JUnit의 `@ParameterizedTest`와 같은 발상이에요. `t.Run(name, func...)`으로 각 줄을 하위 테스트로 돌리면 실패한 경우의 이름이 출력돼요.\n\n| 명령 | 하는 일 |\n|---|---|\n| go test ./... | 모든 패키지 테스트 |\n| go test -run TestExtract ./... | 이름이 맞는 테스트만 |\n| go test -v ./... | 통과한 테스트까지 자세히 |\n| go test -cover ./... | 커버리지 표시 |\n\n`t.Errorf`는 실패를 기록하고 계속 진행하고, `t.Fatalf`는 그 자리에서 테스트를 멈춰요.\n\n**오늘의 미니 프로젝트**: 아래 예제 1의 `extract`는 장비의 running-config 텍스트에서 Loopback 설정을 뽑는 함수예요. 실제 provider에서 흔히 보이는 구조인데 버그가 두 개 있어요. Playground에서 실행해 결과가 기대와 다른 줄을 찾고 고쳐 보세요. 고친 다음 예제 2의 테스트를 돌려 확인해요. Playground는 main 함수 없이 Test 함수만 있으면 테스트로 실행해 줘요.",
+     "code": [
+      {
+       "lang": "go",
+       "text": "// 예제 1: 버그 찾기 (Playground에서 실행)\npackage main\n\nimport (\n\t\"fmt\"\n\t\"strings\"\n)\n\nconst config = `interface Loopback1\n   description uplink-id\n   vrf blue\n   ip address 10.0.0.1/32\ninterface Loopback10\n   ip address 10.0.0.10/32`\n\nfunc extract(config, id string) (string, string, bool) {\n\tlines := strings.Split(config, \"\\n\")\n\tin := false\n\tpattern := fmt.Sprintf(\"interface Loopback%s\", id)\n\tvar cidr, vrf string\n\n\tfor _, line := range lines {\n\t\ttrimmed := strings.TrimSpace(line)\n\t\tif strings.HasPrefix(line, pattern) {\n\t\t\tin = true\n\t\t\tcontinue\n\t\t}\n\t\tif in && strings.HasPrefix(line, \"interface \") {\n\t\t\tbreak\n\t\t}\n\t\tif in && strings.HasPrefix(trimmed, \"ip address \") {\n\t\t\tcidr = strings.TrimPrefix(trimmed, \"ip address \")\n\t\t}\n\t\tif in && strings.HasPrefix(trimmed, \"vrf \") {\n\t\t\tvrf = strings.TrimPrefix(trimmed, \"vrf \")\n\t\t}\n\t}\n\treturn cidr, vrf, true\n}\n\nfunc main() {\n\tfmt.Println(extract(config, \"1\"))  // 기대: 10.0.0.1/32 blue true\n\tfmt.Println(extract(config, \"10\")) // 기대: 10.0.0.10/32  true\n\tfmt.Println(extract(config, \"7\"))  // 기대:   false\n}"
+      },
+      {
+       "lang": "go",
+       "text": "// 예제 2: 고친 함수 + 테이블 테스트 (main 없이 실행하면 테스트로 돌아요)\npackage main\n\nimport (\n\t\"strings\"\n\t\"testing\"\n)\n\nconst config = `interface Loopback1\n   vrf blue\n   ip address 10.0.0.1/32\ninterface Loopback10\n   ip address 10.0.0.10/32`\n\nfunc extract(config, id string) (cidr, vrf string, found bool) {\n\ttarget := \"interface Loopback\" + id\n\tin := false\n\tfor _, line := range strings.Split(config, \"\\n\") {\n\t\ttrimmed := strings.TrimSpace(line)\n\t\tif strings.HasPrefix(line, \"interface \") {\n\t\t\tin = trimmed == target // 버그 1 수정: 이름이 정확히 같을 때만\n\t\t\tif in {\n\t\t\t\tfound = true // 버그 2 수정: 찾았을 때만 true\n\t\t\t}\n\t\t\tcontinue\n\t\t}\n\t\tif !in {\n\t\t\tcontinue\n\t\t}\n\t\tswitch {\n\t\tcase strings.HasPrefix(trimmed, \"ip address \"):\n\t\t\tcidr = strings.TrimPrefix(trimmed, \"ip address \")\n\t\tcase strings.HasPrefix(trimmed, \"vrf \"):\n\t\t\tvrf = strings.TrimPrefix(trimmed, \"vrf \")\n\t\t}\n\t}\n\treturn cidr, vrf, found\n}\n\nfunc TestExtract(t *testing.T) {\n\ttests := []struct {\n\t\tname      string\n\t\tid        string\n\t\twantCidr  string\n\t\twantVRF   string\n\t\twantFound bool\n\t}{\n\t\t{\"VRF가 있는 Loopback1\", \"1\", \"10.0.0.1/32\", \"blue\", true},\n\t\t{\"Loopback10을 Loopback1과 헷갈리지 않음\", \"10\", \"10.0.0.10/32\", \"\", true},\n\t\t{\"없는 번호\", \"7\", \"\", \"\", false},\n\t}\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tcidr, vrf, found := extract(config, tt.id)\n\t\t\tif cidr != tt.wantCidr || vrf != tt.wantVRF || found != tt.wantFound {\n\t\t\t\tt.Errorf(\"extract(%q) = %q, %q, %v; want %q, %q, %v\",\n\t\t\t\t\ttt.id, cidr, vrf, found, tt.wantCidr, tt.wantVRF, tt.wantFound)\n\t\t\t}\n\t\t})\n\t}\n}"
+      }
+     ],
+     "confusions": [
+      "버그 1: `HasPrefix(line, \"interface Loopback1\")`은 Loopback10, Loopback11 줄에도 참이에요. 그래서 Loopback1을 찾다가 Loopback10 블록까지 같은 인터페이스로 착각하고 cidr을 덮어써요. EOS의 `show running-config section Loopback1`도 정규식이라 Loopback10 블록까지 함께 돌려주기 때문에 실제로 일어나는 버그예요.",
+      "버그 2: 못 찾아도 항상 true를 반환하면, Terraform의 Read가 \"장비에서 리소스가 사라졌다\"는 걸 알 수 없어요. Week 2 Day 12에서 이게 왜 중요한지 다시 나와요.",
+      "테스트에 경우를 하나 더 추가해 보세요. 예를 들어 IP가 없는 Loopback, 들여쓰기가 탭인 출력, 마지막 줄에 개행이 있는 출력 같은 것들이요. 파서 버그는 대부분 이런 경계에서 나와요."
+     ],
+     "quiz": [
+      {
+       "q": "Go 테스트 파일 이름 규칙은?",
+       "options": [
+        "Test로 시작",
+        "_test.go로 끝남",
+        "test 폴더에 위치",
+        "@Test 애노테이션"
+       ],
+       "answer": 1,
+       "explain": "같은 폴더에 xxx_test.go로 두고, 함수는 TestXxx(t *testing.T) 형태로 써요."
+      },
+      {
+       "q": "같은 폴더에 있는 다른 .go 파일의 함수를 쓰려면?",
+       "options": [
+        "import 필요",
+        "import 없이 바로 호출",
+        "대문자 함수만 가능",
+        "init 등록 필요"
+       ],
+       "answer": 1,
+       "explain": "같은 패키지라 import 없이 쓸 수 있어요. 소문자 함수도 돼요."
+      },
+      {
+       "q": "외부 모듈에서 import할 수 없게 막는 특별한 폴더 이름은?",
+       "short": true,
+       "answer": "internal",
+       "explain": "internal 아래 패키지는 같은 모듈 안에서만 import할 수 있어요."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Week 2 — Terraform provider 읽고 고치기",
+   "subtitle": "plugin framework의 구조와 규칙, 장비 연동 패턴",
+   "days": [
+    {
+     "id": 8,
+     "title": "Terraform과 provider의 관계",
+     "goal": "Terraform 본체와 provider가 어떻게 나뉘어 있고, plan/apply 때 provider의 어떤 메서드가 불리는지 그림으로 잡아요.",
+     "concept": "Terraform 본체는 HCL을 읽고, 현재 state와 비교해서 무엇을 만들고 바꾸고 지울지 계산해요. 하지만 실제로 장비나 클라우드에 명령을 보내는 건 **provider**예요. provider는 Terraform과 별개인 실행 파일이고, Terraform이 실행할 때 띄워서 gRPC로 대화해요.\n\nSpring에 비유하면 Terraform 본체는 DispatcherServlet, provider는 그 위에 꽂히는 Controller 묶음이에요. 요청을 해석하고 순서를 정하는 건 본체가 하고, provider는 \"이 리소스를 만들어라\" 같은 요청이 왔을 때 할 일만 구현해요.\n\n| 상황 | provider에서 불리는 메서드 |\n|---|---|\n| plan 시작 (기존 리소스 새로고침) | Read |\n| plan 계산 | (선택) ModifyPlan, 스키마 검증 |\n| apply: 새 리소스 | Create |\n| apply: 값이 바뀐 리소스 | Update |\n| apply: 없어진 리소스 | Delete |\n| apply: 바꿀 수 없는 속성 변경 | Delete 후 Create (replace) |\n| terraform import | ImportState 후 Read |\n\n**state**는 Terraform이 \"지난번 apply 결과\"를 기억하는 JSON이에요. 리소스마다 속성 값과 `id`가 들어 있어요. 다음 plan 때 Read로 실제 상태를 다시 읽어 state를 갱신하고, HCL 설정과 비교해서 차이를 보여 줘요. 실제 상태가 설정과 달라져 있으면 이걸 **drift**라고 불러요.\n\nTerraform Cloud/Enterprise(TFE)도 같은 구조예요. run이 시작되면 TFE 워커가 Terraform 본체와 provider 바이너리를 내려받아 똑같이 plan과 apply를 실행하고, state를 TFE에 저장해요.\n\nprovider가 지켜야 할 약속은 단순해요. 요청받은 일을 하고, 그 결과를 정확히 state에 적고, 실패하면 숨기지 말고 에러로 알리는 거예요. Week 2는 이 약속이 코드에서 어떻게 보이는지 따라가요.",
+     "code": [
+      {
+       "lang": "text",
+       "text": "terraform plan / apply\n        │\n        ▼\n Terraform 본체  ── HCL 해석, state 비교, 실행 순서 결정\n        │ gRPC (plugin protocol)\n        ▼\n provider 실행 파일  ── Create / Read / Update / Delete 구현\n        │ HTTP, SSH, 클라우드 API ...\n        ▼\n 실제 장비 / 클라우드"
+      },
+      {
+       "lang": "hcl",
+       "text": "# 이 설정을 apply하면 provider의 Create가 한 번 불려요.\n# 다음 plan부터는 매번 Read가 먼저 불려서 실제 상태를 확인해요.\nresource \"arista_loopback\" \"router_id\" {\n  loopback_id = \"1\"\n  cidr        = \"10.0.0.1/32\"\n}"
+      }
+     ],
+     "confusions": [
+      "plan만 해도 provider가 장비에 접속해요. Read로 현재 상태를 읽어야 하기 때문이에요. 그래서 Read에 버그가 있으면 apply를 안 해도 plan이 실패하거나 매번 차이가 나요.",
+      "Terraform은 state의 `id`로 리소스를 식별해요. id가 비어 있으면 Terraform은 그 리소스를 관리할 수 없어서 apply를 실패로 처리해요.",
+      "run이 실패해도 그 run에서 장비에 이미 보낸 명령은 Terraform이 자동으로 되돌리지 않아요."
+     ],
+     "quiz": [
+      {
+       "q": "terraform plan을 실행했을 때 기존 리소스마다 provider에서 먼저 불리는 메서드는?",
+       "options": [
+        "Create",
+        "Read",
+        "Update",
+        "Delete"
+       ],
+       "answer": 1,
+       "explain": "plan은 먼저 Read로 실제 상태를 새로고침한 뒤 설정과 비교해요."
+      },
+      {
+       "q": "설정을 바꾸지 않았는데 plan마다 변경이 있다고 나오는 현상을 부르는 말은?",
+       "options": [
+        "taint",
+        "drift",
+        "lock",
+        "import"
+       ],
+       "answer": 1,
+       "explain": "실제 상태(또는 Read 결과)와 설정이 어긋나는 걸 drift라고 해요. provider Read의 형식 차이로도 생겨요."
+      },
+      {
+       "q": "Terraform이 리소스를 식별하려고 state에 반드시 저장하는 속성 이름은? (영문 2글자)",
+       "short": true,
+       "answer": "id",
+       "explain": "framework 기반 provider에서도 관례적으로 id 속성을 둬요."
+      }
+     ]
+    },
+    {
+     "id": 9,
+     "title": "provider 프로젝트 구조",
+     "goal": "HashiCorp 공식 스캐폴딩을 기준으로 provider 폴더 구조와 main.go, provider.go의 역할을 파악해요.",
+     "concept": "대부분의 framework 기반 provider는 HashiCorp의 **terraform-provider-scaffolding-framework** 템플릿에서 시작해요. 그래서 처음 보는 provider도 폴더 구조가 거의 같아요.\n\n```text\nterraform-provider-xxx/\n├─ main.go                  진입점. provider 서버를 띄움\n├─ go.mod / go.sum          의존성\n├─ GNUmakefile              make build / test / fmt\n├─ .goreleaser.yml          배포용 빌드 설정\n├─ internal/provider/       실제 코드 전부\n│   ├─ provider.go          provider 설정과 리소스 등록\n│   ├─ xxx_resource.go      리소스 하나 = 파일 하나\n│   ├─ xxx_data_source.go   조회 전용 data source\n│   └─ *_test.go            테스트\n├─ examples/                사용 예시 HCL\n└─ docs/                    문서 (tfplugindocs로 생성)\n```\n\n**main.go**는 짧아요. `providerserver.Serve(ctx, provider.New(version), opts)`로 provider를 gRPC 서버로 띄우는 게 전부예요. `Address`에 provider 주소(예: registry.terraform.io/hashicorp/scaffolding)를 적어요.\n\n**provider.go**에서 볼 곳은 네 군데예요.\n\n| 메서드 | 역할 | Spring 비유 |\n|---|---|---|\n| Metadata | provider 이름(리소스 이름 앞부분) | 애플리케이션 이름 |\n| Schema | provider 블록에 넣는 설정(endpoint, 계정 등) | @ConfigurationProperties |\n| Configure | 설정으로 API 클라이언트를 만들어 리소스에 넘김 | @Bean 생성 |\n| Resources / DataSources | 리소스 생성 함수 목록 | 컴포넌트 등록 |\n\nConfigure에서 만든 클라이언트는 `resp.ResourceData = client`로 넘기고, 각 리소스의 Configure에서 `req.ProviderData`로 받아요. 장비 여러 대를 다루는 provider는 여기서 \"장비 이름 → 클라이언트\" 맵을 만들어 넘기는 경우가 많아요.\n\n처음 읽을 때 순서는 이렇게 권해요. main.go를 훑고, provider.go의 Resources 목록에서 관심 있는 리소스를 고른 다음, 그 리소스 파일의 Create부터 따라가요. 명령을 만드는 함수와 API 클라이언트 함수로 이어지는 길을 한 번 끝까지 따라가면 나머지 리소스는 같은 패턴이라 빨리 읽혀요.",
+     "code": [
+      {
+       "lang": "go",
+       "text": "// main.go (스캐폴딩 구조를 줄인 것)\npackage main\n\nimport (\n\t\"context\"\n\t\"flag\"\n\t\"log\"\n\n\t\"github.com/hashicorp/terraform-plugin-framework/providerserver\"\n\t\"example.com/terraform-provider-arista/internal/provider\"\n)\n\nvar version = \"dev\" // 릴리스 빌드 때 goreleaser가 채움\n\nfunc main() {\n\tvar debug bool\n\tflag.BoolVar(&debug, \"debug\", false, \"디버거로 실행\")\n\tflag.Parse()\n\n\terr := providerserver.Serve(context.Background(), provider.New(version), providerserver.ServeOpts{\n\t\tAddress: \"registry.terraform.io/example/arista\",\n\t\tDebug:   debug,\n\t})\n\tif err != nil {\n\t\tlog.Fatal(err.Error())\n\t}\n}"
+      },
+      {
+       "lang": "go",
+       "text": "// provider.go 의 Configure와 Resources (핵심만)\nfunc (p *AristaProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {\n\tvar config AristaProviderModel\n\tresp.Diagnostics.Append(req.Config.Get(ctx, &config)...)\n\tif resp.Diagnostics.HasError() {\n\t\treturn\n\t}\n\n\tdevices := map[string]*Client{}\n\tfor _, d := range config.Devices {\n\t\tdevices[d.Name.ValueString()] = NewClient(d.Endpoint.ValueString(), d.Username.ValueString(), d.Password.ValueString())\n\t}\n\n\tresp.ResourceData = devices   // 리소스의 Configure로 전달\n\tresp.DataSourceData = devices\n}\n\nfunc (p *AristaProvider) Resources(ctx context.Context) []func() resource.Resource {\n\treturn []func() resource.Resource{\n\t\tNewLoopbackResource,\n\t\tNewVlanResource,\n\t}\n}"
+      }
+     ],
+     "confusions": [
+      "Resources 목록에 함수를 등록하지 않으면, 리소스 파일을 다 만들어도 Terraform이 \"이 리소스 타입을 모른다\"고 해요. 새 리소스를 추가할 때 가장 자주 빠뜨리는 곳이에요.",
+      "목록에는 `NewLoopbackResource()`가 아니라 `NewLoopbackResource`처럼 괄호 없이 함수 자체를 넣어요. framework가 필요할 때 호출해서 새 인스턴스를 만들어요.",
+      "examples/와 docs/에 템플릿 예제가 그대로 남아 있는 provider가 많아요. 실제 사용 예는 provider를 쓰는 Terraform 모듈 쪽을 보는 게 더 정확할 때가 있어요."
+     ],
+     "quiz": [
+      {
+       "q": "provider 설정(endpoint, 계정)으로 API 클라이언트를 만드는 메서드는?",
+       "options": [
+        "Metadata",
+        "Schema",
+        "Configure",
+        "Resources"
+       ],
+       "answer": 2,
+       "explain": "Configure에서 클라이언트를 만들고 resp.ResourceData로 리소스에 넘겨요."
+      },
+      {
+       "q": "새 리소스 파일을 만들고 Terraform에서 인식되게 하려면 꼭 해야 하는 일은?",
+       "options": [
+        "go.mod에 추가",
+        "Resources 목록에 생성 함수 등록",
+        "docs 폴더에 문서 추가",
+        "main.go에 import"
+       ],
+       "answer": 1,
+       "explain": "provider.go의 Resources가 돌려주는 목록에 있어야 Terraform이 그 리소스 타입을 알아요."
+      },
+      {
+       "q": "provider 코드가 보통 모여 있는 폴더 경로는? (internal/___)",
+       "short": true,
+       "answer": "provider, internal/provider",
+       "explain": "스캐폴딩 기준으로 internal/provider 아래에 모든 코드가 있어요."
+      }
+     ]
+    },
+    {
+     "id": 10,
+     "title": "리소스 파일 해부: Model과 Schema",
+     "goal": "리소스 파일의 구성 요소를 순서대로 읽고, Required·Optional·Computed와 plan modifier의 의미를 이해해요.",
+     "concept": "리소스 파일은 항상 같은 틀이에요. 하나를 이해하면 나머지도 같은 순서로 읽혀요.\n\n| 구성 요소 | 하는 일 |\n|---|---|\n| var _ resource.Resource = ... | 인터페이스 구현 컴파일 확인 |\n| XxxResource struct | 리소스 본체. 보통 클라이언트를 필드로 가짐 |\n| XxxResourceModel struct | 속성 값을 담는 그릇. tfsdk 태그로 HCL과 연결 |\n| Metadata | 리소스 타입 이름 (provider이름_리소스이름) |\n| Schema | 속성 목록과 각 속성의 성격 |\n| Configure | provider가 만든 클라이언트를 받음 |\n| Create / Read / Update / Delete | 실제 작업 |\n| ImportState | terraform import 지원 |\n\nModel의 필드 타입은 Go의 string이 아니라 **types.String**이에요. Terraform 값은 \"설정 안 함(null)\"과 \"아직 모름(unknown)\" 상태가 있어서, 일반 string으로는 표현이 안 되기 때문이에요. 숫자는 types.Int64, 불린은 types.Bool을 써요.\n\nSchema에서 각 속성은 세 가지 성격 중 하나예요.\n\n| 성격 | 누가 값을 정하나 | 예 |\n|---|---|---|\n| Required | 사용자(HCL)가 반드시 | loopback_id |\n| Optional | 사용자가 넣을 수도 안 넣을 수도 | cidr, vrf_name |\n| Computed | provider가 정함 | id, 장비가 정하는 MAC 주소 |\n| Optional + Computed | 사용자가 안 넣으면 provider가 채움 | 기본값이 있는 속성 |\n\n**Computed 속성은 provider의 책임**이에요. 사용자가 HCL에서 값을 넣을 수 없고, Create가 끝날 때 provider가 반드시 채워야 해요. 이 약속을 어기면 무슨 일이 생기는지 Day 11에서 봐요.\n\n**plan modifier**는 plan 단계에서 값을 어떻게 보여 줄지 정해요. 두 가지는 꼭 알아 두세요. `stringplanmodifier.UseStateForUnknown()`은 이미 만든 리소스의 Computed 값을 plan에서 \"(known after apply)\" 대신 이전 값으로 보여 줘요. id에 거의 항상 붙여요. `stringplanmodifier.RequiresReplace()`는 그 속성이 바뀌면 Update 대신 지우고 다시 만들게 해요. loopback 번호처럼 바꾸면 사실상 다른 리소스가 되는 속성에 붙여요.",
+     "code": [
+      {
+       "lang": "go",
+       "text": "var _ resource.Resource = &LoopbackResource{}\n\ntype LoopbackResource struct {\n\tdevices map[string]*Client\n}\n\ntype LoopbackResourceModel struct {\n\tID         types.String `tfsdk:\"id\"`\n\tLoopbackID types.String `tfsdk:\"loopback_id\"`\n\tCidr       types.String `tfsdk:\"cidr\"`\n\tVRFName    types.String `tfsdk:\"vrf_name\"`\n\tDevice     types.String `tfsdk:\"device\"`\n}\n\nfunc NewLoopbackResource() resource.Resource {\n\treturn &LoopbackResource{}\n}\n\nfunc (r *LoopbackResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {\n\tresp.TypeName = req.ProviderTypeName + \"_loopback\" // arista_loopback\n}\n\nfunc (r *LoopbackResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {\n\tresp.Schema = schema.Schema{\n\t\tAttributes: map[string]schema.Attribute{\n\t\t\t\"id\": schema.StringAttribute{\n\t\t\t\tComputed: true,\n\t\t\t\tPlanModifiers: []planmodifier.String{\n\t\t\t\t\tstringplanmodifier.UseStateForUnknown(),\n\t\t\t\t},\n\t\t\t},\n\t\t\t\"loopback_id\": schema.StringAttribute{\n\t\t\t\tRequired: true,\n\t\t\t\tPlanModifiers: []planmodifier.String{\n\t\t\t\t\tstringplanmodifier.RequiresReplace(), // 번호가 바뀌면 새로 만듦\n\t\t\t\t},\n\t\t\t},\n\t\t\t\"cidr\":     schema.StringAttribute{Optional: true},\n\t\t\t\"vrf_name\": schema.StringAttribute{Optional: true},\n\t\t\t\"device\":   schema.StringAttribute{Optional: true},\n\t\t},\n\t}\n}\n\nfunc (r *LoopbackResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {\n\tif req.ProviderData == nil { // plan 초기 단계에서는 nil로 한 번 불릴 수 있음\n\t\treturn\n\t}\n\tdevices, ok := req.ProviderData.(map[string]*Client)\n\tif !ok {\n\t\tresp.Diagnostics.AddError(\"Unexpected provider data\", fmt.Sprintf(\"got %T\", req.ProviderData))\n\t\treturn\n\t}\n\tr.devices = devices\n}"
+      }
+     ],
+     "confusions": [
+      "Model의 필드와 Schema의 속성은 **정확히 1:1**이어야 해요. Schema에만 있거나 Model에만 있으면 실행할 때 에러가 나요. 속성을 추가할 때는 두 곳을 같이 고쳐요.",
+      "Configure는 req.ProviderData가 nil인 상태로 먼저 불릴 수 있어요. 그래서 nil이면 그냥 return하는 코드가 들어가요. 이걸 빼면 provider가 panic으로 죽을 수 있어요.",
+      "`RequiresReplace`가 없는 속성이 바뀌면 Update가 불려요. Update에서 그 속성 변경을 처리하지 않으면, 장비에는 반영이 안 됐는데 state에는 새 값이 저장되는 어긋남이 생겨요."
+     ],
+     "quiz": [
+      {
+       "q": "사용자가 HCL에서 값을 넣을 수 없고 provider가 반드시 채워야 하는 속성 성격은?",
+       "options": [
+        "Required",
+        "Optional",
+        "Computed",
+        "Sensitive"
+       ],
+       "answer": 2,
+       "explain": "Computed만 있는 속성은 provider가 값을 정해요. Create가 끝날 때 채워져 있어야 해요."
+      },
+      {
+       "q": "loopback 번호처럼 바뀌면 지우고 다시 만들어야 하는 속성에 붙이는 plan modifier는?",
+       "options": [
+        "UseStateForUnknown",
+        "RequiresReplace",
+        "Sensitive",
+        "Default"
+       ],
+       "answer": 1,
+       "explain": "RequiresReplace가 붙은 속성이 바뀌면 Terraform이 replace(Delete 후 Create)로 계획해요."
+      },
+      {
+       "q": "Model 필드에 Go의 string 대신 쓰는 framework 타입은? (types.___)",
+       "short": true,
+       "answer": "String, types.String",
+       "explain": "null과 unknown을 표현하려고 types.String을 써요."
+      }
+     ]
+    },
+    {
+     "id": 11,
+     "title": "CRUD 흐름과 plan/state · Create의 id 버그",
+     "goal": "Create·Update·Delete에서 plan과 state를 읽고 쓰는 정확한 순서를 익히고, Computed id를 채우지 않아 apply가 실패하는 버그를 직접 고쳐요.",
+     "concept": "CRUD 메서드는 모두 같은 흐름이에요. **요청에서 값을 읽고 → 장비에 작업하고 → 결과를 응답 state에 쓰고 → 문제가 있으면 Diagnostics에 에러를 남기고 return**해요.\n\n| 메서드 | 읽는 값 | 써야 하는 값 |\n|---|---|---|\n| Create | req.Plan (원하는 값) | resp.State (Computed 포함 전부) |\n| Read | req.State (지난번 값) | resp.State (장비의 실제 값) |\n| Update | req.Plan + req.State | resp.State |\n| Delete | req.State | (안 써도 됨, 성공하면 자동 제거) |\n\n**plan은 앞으로 원하는 값, state는 지난번에 저장한 값**이에요. Update에서 \"무엇이 바뀌었는지\" 알려면 둘을 모두 읽어서 비교해야 해요.\n\n에러는 예외를 던지는 대신 `resp.Diagnostics.AddError(제목, 내용)`로 쌓아요. framework가 함수가 끝난 뒤 Diagnostics를 보고 실패 여부를 판단해요. 그래서 AddError 다음에는 반드시 return이 와야 해요. return이 없으면 실패한 상태로 state 저장까지 진행돼요.\n\n이제 실제로 자주 나오는 버그 두 개를 봐요. 예제 1은 장비 명령은 성공했는데 apply가 실패하는 코드예요. Terraform은 이런 에러를 내요.\n\n```text\nError: Provider returned invalid result object after apply\nAfter the apply operation, the provider still indicated an unknown value for arista_loopback.router_id.id.\nAll values must be known after apply, so this is always a bug in the provider.\n```\n\nCreate가 시작될 때 Computed인 id는 unknown이에요. provider가 값을 넣지 않고 plan을 그대로 state에 저장하면 id가 unknown인 채로 남아요. 장비에는 loopback이 이미 생겼는데 Terraform은 run을 실패로 처리하고, 그 리소스를 추적하지 못하게 돼요.\n\n두 번째 버그는 Update에서 state를 읽지 않는 거예요. `var state Model`만 선언하고 `req.State.Get`을 빼먹으면 state의 모든 필드가 zero value예요(Day 2). \"이전 cidr과 새 cidr이 다르면 IP를 지우고 다시 넣는다\"는 로직이 매번 참이 되어, 다른 속성만 바꿔도 루프백 IP가 잠깐 빠졌다 들어가요. 루프백 IP를 BGP·OSPF router-id로 쓰고 있다면 라우팅에 영향을 줄 수 있어요.",
+     "code": [
+      {
+       "lang": "go",
+       "text": "// 예제 1: 버그 두 개를 찾아보세요 (읽기 전용)\nfunc (r *LoopbackResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {\n\tvar plan LoopbackResourceModel\n\tresp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)\n\tif resp.Diagnostics.HasError() {\n\t\treturn\n\t}\n\n\tclient := r.devices[plan.Device.ValueString()]\n\tif _, err := client.RunCmds(ctx, createCommands(plan)); err != nil {\n\t\tresp.Diagnostics.AddError(\"Error creating loopback\", err.Error())\n\t\treturn\n\t}\n\n\tresp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)\n}\n\nfunc (r *LoopbackResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {\n\tvar plan, state LoopbackResourceModel\n\tresp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)\n\tif resp.Diagnostics.HasError() {\n\t\treturn\n\t}\n\n\t// updateCommands는 state.Cidr와 plan.Cidr가 다르면\n\t// \"no ip address\" 다음에 \"ip address <새 값>\"을 만들어요.\n\tclient := r.devices[plan.Device.ValueString()]\n\tif _, err := client.RunCmds(ctx, updateCommands(state, plan)); err != nil {\n\t\tresp.Diagnostics.AddError(\"Error updating loopback\", err.Error())\n\t\treturn\n\t}\n\n\tresp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)\n}"
+      },
+      {
+       "lang": "go",
+       "text": "// 정답: Create — State.Set 직전에 Computed id를 채워요\nplan.ID = plan.LoopbackID   // 또는 types.StringValue(\"Loopback\" + plan.LoopbackID.ValueString())\nresp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)\n\n// 정답: Update — plan을 읽은 다음 state도 읽어요\nresp.Diagnostics.Append(req.State.Get(ctx, &state)...)\nif resp.Diagnostics.HasError() {\n\treturn\n}\n// id에 UseStateForUnknown이 붙어 있으면 plan.ID에 이전 id가 이미 들어 있어서\n// Update에서는 id를 따로 채우지 않아도 돼요."
+      },
+      {
+       "lang": "go",
+       "text": "// Delete는 state만 있으면 돼요\nfunc (r *LoopbackResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {\n\tvar state LoopbackResourceModel\n\tresp.Diagnostics.Append(req.State.Get(ctx, &state)...)\n\tif resp.Diagnostics.HasError() {\n\t\treturn\n\t}\n\tclient := r.devices[state.Device.ValueString()]\n\tcmds := []string{\"enable\", \"configure terminal\", \"no interface Loopback\" + state.LoopbackID.ValueString(), \"end\"}\n\tif _, err := client.RunCmds(ctx, cmds); err != nil {\n\t\tresp.Diagnostics.AddError(\"Error deleting loopback\", err.Error())\n\t\treturn\n\t}\n\t// 에러 없이 끝나면 framework가 state에서 자동으로 제거해요\n}"
+      }
+     ],
+     "confusions": [
+      "Create가 실패로 끝나도 **장비에 보낸 명령은 이미 실행됐을 수 있어요.** id 버그처럼 명령 이후 단계에서 실패하면, 장비에는 설정이 남고 Terraform state에는 없는 상태가 돼요. 다시 apply하면 같은 설정을 또 만들려고 해서 충돌이 날 수 있으니 장비 상태를 먼저 확인하세요.",
+      "`r.devices[name]`처럼 맵에서 꺼낸 클라이언트가 nil일 수 있어요(장비 이름 오타). comma ok로 확인하고 AddError하는 게 안전해요.",
+      "Update에서 `plan.Cidr.ValueString() == \"\"`만으로 \"속성을 지웠다\"고 판단하면, null과 빈 문자열을 구분하지 못해요. `plan.Cidr.IsNull()`을 같이 보세요."
+     ],
+     "quiz": [
+      {
+       "q": "Update에서 무엇이 바뀌었는지 알려면 읽어야 하는 것은?",
+       "options": [
+        "req.Plan만",
+        "req.State만",
+        "req.Plan과 req.State 둘 다",
+        "req.Config만"
+       ],
+       "answer": 2,
+       "explain": "plan(원하는 값)과 state(지난번 값)를 비교해야 변경 사항을 알 수 있어요."
+      },
+      {
+       "q": "\"provider still indicated an unknown value for ...id\" 에러의 원인은?",
+       "options": [
+        "장비 명령 실패",
+        "Create에서 Computed id를 채우지 않음",
+        "HCL 문법 오류",
+        "네트워크 타임아웃"
+       ],
+       "answer": 1,
+       "explain": "apply가 끝났는데 Computed 값이 unknown이면 Terraform이 provider 버그로 보고 실패시켜요."
+      },
+      {
+       "q": "framework에서 에러를 쌓는 응답 필드 이름은? (resp.___)",
+       "short": true,
+       "answer": "Diagnostics, resp.Diagnostics",
+       "explain": "resp.Diagnostics.AddError(...)로 에러를 남기고 바로 return해요."
+      }
+     ]
+    },
+    {
+     "id": 12,
+     "title": "Read, drift, import",
+     "goal": "Read가 지켜야 할 규칙을 익히고, 매번 drift가 나는 원인(null과 빈 문자열)과 import 구현 방법을 이해해요.",
+     "concept": "Read는 plan 때마다 불려요. 할 일은 하나예요. **장비의 실제 상태를 읽어 state에 그대로 반영**하는 거예요. 이 결과가 HCL 설정과 다르면 Terraform이 plan에 변경 사항으로 보여 줘요.\n\n규칙 1. **장비에서 리소스가 사라졌으면 `resp.State.RemoveResource(ctx)`를 불러요.** 그러면 Terraform은 \"없어졌으니 다시 만들어야 한다\"고 계획해요. 사라졌는데 에러를 내면 plan 자체가 막히고, 사라졌는데 아무 일 없다는 듯 이전 값을 두면 영영 다시 만들지 않아요. 그래서 파서 함수가 \"못 찾음\"을 정확히 알려 주는 게 중요해요(Day 7의 found).\n\n규칙 2. **설정과 같은 표현으로 돌려줘요.** 반복되는 drift의 가장 흔한 원인은 형식 차이예요.\n\n| 설정(HCL) | Read가 넣은 값 | 결과 |\n|---|---|---|\n| vrf_name 생략 (null) | types.StringValue(\"\") | 매번 변경 있음 |\n| speed = \"auto\" | \"Auto\" | 매번 변경 있음 |\n| cidr = \"10.0.0.1/32\" | \"10.0.0.1/32\" | 변경 없음 |\n| vrf_name 생략 (null) | types.StringNull() | 변경 없음 |\n\n장비에 값이 없을 때는 빈 문자열이 아니라 `types.StringNull()`을 넣어야 \"설정 안 함\"과 같아져요. 대소문자, 기본값 표기, 공백도 설정에 쓰는 형식으로 맞춰서(normalize) 넣어요.\n\n규칙 3. **Read는 state에 있는 정보만으로 동작해야 해요.** import 직후에는 id만 있고 나머지 속성은 비어 있어요. id에서 필요한 값을 복원할 수 있게 id 형식을 정해 두면 import가 쉬워져요. 예를 들어 id를 \"leaf1:Loopback1\"처럼 장비와 번호를 담게 만들 수 있어요.\n\n**ImportState**는 `terraform import arista_loopback.x <id>`를 실행했을 때 불려요. 가장 간단한 구현은 받은 id를 그대로 id 속성에 넣고, 나머지는 바로 이어서 불리는 Read에 맡기는 거예요.\n\n```go\nfunc (r *LoopbackResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {\n\tresource.ImportStatePassthroughID(ctx, path.Root(\"id\"), req, resp)\n}\n```\n\nImportState가 비어 있으면 import가 아무것도 하지 않아요. 장비에 이미 있는 설정을 Terraform 관리로 가져올 방법이 없어져서, state와 장비가 어긋났을 때 복구가 어려워요.",
+     "code": [
+      {
+       "lang": "go",
+       "text": "func (r *LoopbackResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {\n\tvar state LoopbackResourceModel\n\tresp.Diagnostics.Append(req.State.Get(ctx, &state)...)\n\tif resp.Diagnostics.HasError() {\n\t\treturn\n\t}\n\n\tclient := r.devices[state.Device.ValueString()]\n\tout, err := client.RunText(ctx, \"show running-config interfaces Loopback\"+state.LoopbackID.ValueString())\n\tif err != nil {\n\t\tresp.Diagnostics.AddError(\"Error reading loopback\", err.Error())\n\t\treturn\n\t}\n\n\tcidr, vrf, found := extract(out, state.LoopbackID.ValueString())\n\tif !found {\n\t\tresp.State.RemoveResource(ctx) // 장비에서 사라짐 → 다시 만들도록\n\t\treturn\n\t}\n\n\tstate.Cidr = stringOrNull(cidr)\n\tstate.VRFName = stringOrNull(vrf)\n\tresp.Diagnostics.Append(resp.State.Set(ctx, &state)...)\n}\n\n// 빈 값이면 null로: 설정에서 생략한 것과 같게 만들어 drift를 막아요\nfunc stringOrNull(s string) types.String {\n\tif s == \"\" {\n\t\treturn types.StringNull()\n\t}\n\treturn types.StringValue(s)\n}"
+      }
+     ],
+     "confusions": [
+      "drift가 매 run마다 같은 리소스에서 나면, 누가 장비를 손으로 바꾼 것보다 Read의 형식 차이일 가능성이 높아요. plan 출력에서 `\"\" -> null`이나 `\"Auto\" -> \"auto\"` 같은 변화를 찾아보세요.",
+      "Read에서 장비 접속 에러가 났을 때 RemoveResource를 부르면 안 돼요. \"못 읽음\"과 \"없음\"은 달라요. 접속 에러에 RemoveResource를 부르면 다음 apply에서 멀쩡한 설정을 다시 만들려고 해요.",
+      "`show running-config section X`의 X는 정규식이에요. Loopback1을 조회하면 Loopback10, Loopback11도 같이 나오니 파서가 정확한 이름으로 걸러야 해요."
+     ],
+     "quiz": [
+      {
+       "q": "Read에서 장비에 리소스가 없다는 걸 확인했을 때 올바른 처리는?",
+       "options": [
+        "AddError로 실패",
+        "이전 state를 그대로 저장",
+        "resp.State.RemoveResource(ctx) 호출",
+        "panic"
+       ],
+       "answer": 2,
+       "explain": "state에서 제거하면 Terraform이 다시 만들도록 계획해요."
+      },
+      {
+       "q": "HCL에서 생략한 Optional 속성에 대해 Read가 넣어야 drift가 안 나는 값은?",
+       "options": [
+        "types.StringValue(\"\")",
+        "types.StringNull()",
+        "types.StringUnknown()",
+        "아무 값이나"
+       ],
+       "answer": 1,
+       "explain": "생략은 null이에요. 빈 문자열은 다른 값으로 취급돼서 매번 변경이 나와요."
+      },
+      {
+       "q": "받은 id를 그대로 id 속성에 넣는 framework 헬퍼 함수 이름은? (resource.___)",
+       "short": true,
+       "answer": "ImportStatePassthroughID, resource.ImportStatePassthroughID",
+       "explain": "id만 넣고 나머지는 이어서 불리는 Read가 채워요."
+      }
+     ]
+    },
+    {
+     "id": 13,
+     "title": "장비 연동 패턴: Arista eAPI",
+     "goal": "Arista eAPI의 요청·응답 형식을 이해하고, 명령 생성 → 전송 → 출력 파싱으로 이어지는 provider의 장비 연동 구조를 Go로 따라가요.",
+     "concept": "Arista EOS의 **eAPI**는 HTTP로 CLI 명령을 보내는 JSON-RPC 2.0 API예요. 스위치의 `/command-api` 경로로 POST하고, 메서드 이름은 `runCmds`예요. 명령 여러 개를 한 번에 보내면 순서대로 실행하고, 결과도 명령 순서대로 배열에 담아 돌려줘요.\n\n| 필드 | 뜻 |\n|---|---|\n| method | 항상 runCmds |\n| params.version | 응답 형식 버전 (보통 1) |\n| params.cmds | 실행할 CLI 명령 배열 |\n| params.format | json(구조화된 결과) 또는 text(CLI 출력 그대로) |\n| result | 명령마다 하나씩, 같은 순서의 배열 |\n\n설정 명령은 `enable`, `configure terminal`부터 순서대로 보내요. 설정 명령의 결과는 보통 빈 객체 `{}`예요. show 명령은 format이 json이면 필드가 나뉜 객체가 오고, text면 `{\"output\": \"...\"}` 안에 CLI 출력 문자열이 와요.\n\n명령 하나가 실패하면 그 뒤 명령은 실행되지 않고 `error` 객체가 와요. 에러 메시지에 몇 번째 명령이 왜 실패했는지 나오니 provider는 이 메시지를 그대로 Diagnostics에 넣어 주는 게 좋아요. 앞의 명령은 이미 실행됐다는 점도 기억하세요.\n\nprovider의 장비 연동은 보통 세 층으로 나뉘어요. Spring의 Controller → Service → Client 구조와 비슷해요.\n\n| 층 | 하는 일 | 테스트 |\n|---|---|---|\n| 리소스 CRUD | plan/state 읽고 쓰기 | Terraform 실행 필요 |\n| 명령 생성·파싱 함수 | Model → 명령 배열, 출력 → 값 | 순수 함수라 단위 테스트 쉬움 |\n| eAPI 클라이언트 | HTTP 요청, 에러 변환 | 가짜 HTTP 서버로 테스트 |\n\n가운데 층이 순수 함수(입력만으로 결과가 정해지는 함수)라서, 장비 없이 테스트를 붙이기 가장 좋은 곳이에요. 처음 provider에 기여한다면 여기 테스트부터 붙이는 걸 권해요.\n\ntext 출력을 직접 파싱하면 EOS 버전마다 출력 형식이 조금씩 달라서 깨지기 쉬워요. 같은 정보를 json으로 주는 show 명령이 있으면 json 쪽이 안정적이에요. 다만 running-config 확인처럼 text만 되는 경우도 많아요.\n\n`context.Context`는 HTTP 요청까지 그대로 넘겨요. `http.NewRequestWithContext(ctx, ...)`로 만들면 사용자가 Terraform을 Ctrl+C로 멈추거나 타임아웃이 났을 때 요청이 같이 취소돼요.",
+     "code": [
+      {
+       "lang": "json",
+       "text": "// 요청\n{\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"runCmds\",\n  \"params\": {\n    \"version\": 1,\n    \"cmds\": [\"enable\", \"configure terminal\", \"interface Loopback1\", \"ip address 10.0.0.1/32\", \"end\"],\n    \"format\": \"json\"\n  },\n  \"id\": \"1\"\n}\n\n// 성공 응답: 명령마다 결과 하나\n{ \"jsonrpc\": \"2.0\", \"id\": \"1\", \"result\": [{}, {}, {}, {}, {}] }\n\n// text 형식 show 응답\n{ \"jsonrpc\": \"2.0\", \"id\": \"2\", \"result\": [{}, {\"output\": \"interface Loopback1\\n   ip address 10.0.0.1/32\\n\"}] }"
+      },
+      {
+       "lang": "go",
+       "text": "package eapi\n\nimport (\n\t\"bytes\"\n\t\"context\"\n\t\"encoding/json\"\n\t\"fmt\"\n\t\"net/http\"\n)\n\ntype Client struct {\n\tURL      string // https://<장비>/command-api\n\tUsername string\n\tPassword string\n\tHTTP     *http.Client\n}\n\ntype request struct {\n\tJSONRPC string `json:\"jsonrpc\"`\n\tMethod  string `json:\"method\"`\n\tParams  params `json:\"params\"`\n\tID      string `json:\"id\"`\n}\n\ntype params struct {\n\tVersion int      `json:\"version\"`\n\tCmds    []string `json:\"cmds\"`\n\tFormat  string   `json:\"format\"`\n}\n\ntype response struct {\n\tResult []map[string]any `json:\"result\"`\n\tError  *struct {\n\t\tCode    int    `json:\"code\"`\n\t\tMessage string `json:\"message\"`\n\t} `json:\"error\"`\n}\n\nfunc (c *Client) RunCmds(ctx context.Context, cmds []string, format string) ([]map[string]any, error) {\n\tbody, err := json.Marshal(request{JSONRPC: \"2.0\", Method: \"runCmds\", ID: \"1\",\n\t\tParams: params{Version: 1, Cmds: cmds, Format: format}})\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\n\treq, err := http.NewRequestWithContext(ctx, http.MethodPost, c.URL, bytes.NewReader(body))\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\treq.SetBasicAuth(c.Username, c.Password)\n\treq.Header.Set(\"Content-Type\", \"application/json\")\n\n\thttpResp, err := c.HTTP.Do(req)\n\tif err != nil {\n\t\treturn nil, fmt.Errorf(\"eAPI 요청 실패: %w\", err)\n\t}\n\tdefer httpResp.Body.Close() // 함수가 끝날 때 닫기\n\n\tvar out response\n\tif err := json.NewDecoder(httpResp.Body).Decode(&out); err != nil {\n\t\treturn nil, fmt.Errorf(\"eAPI 응답 해석 실패: %w\", err)\n\t}\n\tif out.Error != nil {\n\t\treturn nil, fmt.Errorf(\"eAPI 에러 %d: %s\", out.Error.Code, out.Error.Message)\n\t}\n\treturn out.Result, nil\n}"
+      }
+     ],
+     "confusions": [
+      "eAPI가 에러를 돌려줘도 HTTP 상태는 200일 수 있어요. HTTP 상태만 보지 말고 응답 JSON의 `error` 필드를 꼭 확인하세요.",
+      "`defer httpResp.Body.Close()`를 빼먹으면 연결이 반환되지 않아 리소스가 많을 때 provider가 느려지거나 멈춰요. defer는 Java의 try-with-resources처럼 쓰는 관용구예요.",
+      "결과 배열의 인덱스는 보낸 명령의 순서와 같아요. `enable`을 앞에 붙였다면 실제 show 결과는 `result[1]`이에요. 명령을 하나 추가하면서 인덱스를 고치지 않는 실수가 흔해요."
+     ],
+     "quiz": [
+      {
+       "q": "eAPI에서 CLI 명령 배열을 실행하는 JSON-RPC 메서드 이름은?",
+       "options": [
+        "execute",
+        "runCmds",
+        "cli",
+        "configure"
+       ],
+       "answer": 1,
+       "explain": "method는 runCmds이고 params.cmds에 명령 배열을 넣어요."
+      },
+      {
+       "q": "장비 없이 단위 테스트를 붙이기 가장 쉬운 층은?",
+       "options": [
+        "리소스 CRUD",
+        "명령 생성·출력 파싱 함수",
+        "eAPI HTTP 클라이언트",
+        "provider Configure"
+       ],
+       "answer": 1,
+       "explain": "입력만으로 결과가 정해지는 순수 함수라 테스트하기 쉬워요."
+      },
+      {
+       "q": "text 형식 show 결과에서 CLI 출력 문자열이 들어 있는 키 이름은?",
+       "short": true,
+       "answer": "output",
+       "explain": "text 형식이면 각 결과가 {\"output\": \"...\"} 형태예요."
+      }
+     ]
+    },
+    {
+     "id": 14,
+     "title": "미니 프로젝트: 내 PC에서 provider 빌드하고 버그 재현",
+     "goal": "공개 스캐폴딩 provider를 직접 빌드해 Terraform에 연결하고, Day 11의 id 버그와 Day 12의 drift를 내 손으로 재현해요.",
+     "concept": "HashiCorp의 **terraform-provider-scaffolding-framework**는 장비 없이 동작하는 예제 리소스 `scaffolding_example`을 갖고 있어요. 이걸 빌드해서 Terraform이 내가 빌드한 바이너리를 쓰게 만들면, provider 개발의 전체 사이클을 집에서 돌려 볼 수 있어요.\n\nTerraform은 보통 registry에서 provider를 내려받지만, **dev_overrides** 설정을 넣으면 지정한 폴더의 로컬 바이너리를 대신 써요. Windows에서는 `%APPDATA%\\terraform.rc` 파일에 설정해요. dev_overrides를 쓰는 동안에는 `terraform init` 없이 바로 plan과 apply를 실행해요. 실행할 때마다 개발용 override를 쓰고 있다는 경고가 나오는데 정상이에요.\n\n오늘 할 일은 네 단계예요. 예제 코드를 순서대로 따라 하세요.\n\n**1단계 빌드와 연결**: 스캐폴딩을 받아 빌드하고, terraform.rc에 경로를 넣고, 예제 HCL로 apply해서 성공하는 걸 확인해요.\n\n**2단계 id 버그 재현**: `internal/provider/example_resource.go`의 Create에서 id를 채우는 줄(`data.Id = types.StringValue(\"example-id\")`)을 주석 처리하고 다시 빌드해요. state 파일을 지우고 apply하면 Day 11에서 본 \"provider still indicated an unknown value\" 에러가 나와요. 주석을 풀고 다시 빌드하면 정상으로 돌아와요.\n\n**3단계 drift 재현**: 예제 리소스에 Optional 속성을 하나 추가하고(Model과 Schema 둘 다), Read에서 그 속성에 `types.StringValue(\"\")`를 넣어 보세요. HCL에서 그 속성을 생략하고 apply한 뒤 plan을 다시 돌리면, 아무것도 안 바꿨는데 변경이 있다고 나와요. `types.StringNull()`로 바꾸면 사라져요.\n\n**4단계 실제 provider 읽기 연습**: 회사나 오픈소스 provider를 볼 때 아래 체크리스트로 훑어보세요.\n\n| 확인할 것 | 볼 곳 |\n|---|---|\n| Create가 모든 Computed 속성을 채우나 | Create의 State.Set 직전 |\n| 주석 처리된 필수 코드가 없나 | // plan.ID, // req.State.Get 검색 |\n| Update가 state를 읽나 | Update 앞부분의 req.State.Get |\n| Read가 없어진 리소스에 RemoveResource를 부르나 | Read의 파싱 결과 처리 |\n| 생략 가능한 속성을 null로 돌려주나 | Read의 types.StringValue 사용처 |\n| 타입 단언에 ok 확인이 있나 | .(string) 검색 |\n| ImportState가 구현돼 있나 | 파일 맨 아래 |\n\n수료 후 다음 단계로는 HashiCorp의 공식 튜토리얼 \"Custom framework providers\"를 추천해요. 가짜 API 서버를 상대로 provider를 처음부터 만들어 보는 과정이에요.",
+     "code": [
+      {
+       "lang": "powershell",
+       "text": "# 1단계: 받아서 빌드 (Git, Go, Terraform 설치 필요)\ngit clone https://github.com/hashicorp/terraform-provider-scaffolding-framework\ncd terraform-provider-scaffolding-framework\n\n# Terraform이 찾을 수 있는 이름으로 빌드\ngo build -o \"$env:USERPROFILE\\go\\bin\\terraform-provider-scaffolding.exe\" .\n\n# 설정 파일 위치 확인 (없으면 새로 만들기)\nnotepad \"$env:APPDATA\\terraform.rc\"\n"
+      },
+      {
+       "lang": "hcl",
+       "text": "# %APPDATA%\\terraform.rc  (<사용자이름>은 본인 계정으로)\nprovider_installation {\n  dev_overrides {\n    \"registry.terraform.io/hashicorp/scaffolding\" = \"C:/Users/<사용자이름>/go/bin\"\n  }\n  direct {}\n}"
+      },
+      {
+       "lang": "hcl",
+       "text": "# 빈 폴더에 main.tf로 저장한 뒤 terraform apply\nterraform {\n  required_providers {\n    scaffolding = {\n      source = \"hashicorp/scaffolding\"\n    }\n  }\n}\n\nprovider \"scaffolding\" {}\n\nresource \"scaffolding_example\" \"test\" {\n  configurable_attribute = \"hello\"\n}"
+      },
+      {
+       "lang": "powershell",
+       "text": "# 2단계: id 버그 재현\n# example_resource.go의 Create에서 아래 줄을 주석 처리\n#   data.Id = types.StringValue(\"example-id\")\ngo build -o \"$env:USERPROFILE\\go\\bin\\terraform-provider-scaffolding.exe\" .\n\n# 테스트 폴더에서 이전 state를 지우고 다시 apply\nRemove-Item terraform.tfstate* -ErrorAction SilentlyContinue\nterraform apply -auto-approve\n# → Error: Provider returned invalid result object after apply ... unknown value for scaffolding_example.test.id"
+      }
+     ],
+     "confusions": [
+      "dev_overrides의 폴더에는 `terraform-provider-scaffolding.exe`처럼 `terraform-provider-<이름>` 형식의 파일이 있어야 해요. `go install`로 만들면 저장소 이름(terraform-provider-scaffolding-framework)으로 생겨서 못 찾을 수 있어 `go build -o`로 이름을 지정했어요.",
+      "dev_overrides를 넣어 둔 채로 회사 업무용 Terraform을 실행하면 같은 provider 주소일 때 로컬 빌드를 쓰게 돼요. 실습이 끝나면 terraform.rc의 해당 줄을 지우거나 주석 처리하세요.",
+      "스캐폴딩 코드는 버전에 따라 함수나 변수 이름이 조금 다를 수 있어요. Create 함수 안에서 `Id`에 값을 넣는 줄을 찾으면 돼요."
+     ],
+     "quiz": [
+      {
+       "q": "Terraform이 registry 대신 로컬에서 빌드한 provider를 쓰게 하는 설정은?",
+       "options": [
+        "required_version",
+        "dev_overrides",
+        "backend",
+        "provider alias"
+       ],
+       "answer": 1,
+       "explain": "terraform.rc(또는 .terraformrc)의 provider_installation 안 dev_overrides에 넣어요."
+      },
+      {
+       "q": "Optional 속성을 생략했는데 plan마다 변경이 있다고 나올 때 먼저 의심할 곳은?",
+       "options": [
+        "HCL 문법",
+        "Read가 null 대신 빈 문자열을 넣는지",
+        "네트워크 지연",
+        "Terraform 버전"
+       ],
+       "answer": 1,
+       "explain": "생략(null)과 빈 문자열은 다른 값이라 계속 차이가 나요."
+      },
+      {
+       "q": "Windows에서 Terraform CLI 설정 파일 이름은? (%APPDATA%\\___)",
+       "short": true,
+       "answer": "terraform.rc",
+       "explain": "Windows는 %APPDATA%\\terraform.rc, macOS·Linux는 ~/.terraformrc예요."
+      }
+     ]
+    }
+   ]
+  }
+ ]
+};
+
+/* ===== 앱 로직 ===== */
+const STORAGE_KEY = "goprovider14_v1";
+const state = {
+  current: 1,
+  done: new Set()
+};
+
+function load() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const obj = JSON.parse(raw);
+    state.current = obj.current || 1;
+    state.done = new Set(obj.done || []);
+  } catch(e) {}
+}
+function save() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ current: state.current, done: [...state.done] }));
+}
+
+function allDays() {
+  return curriculum.weeks.flatMap(w => w.days);
+}
+function getDay(id) {
+  return allDays().find(d => d.id === id);
+}
+
+function renderSidebar() {
+  const html = curriculum.weeks.map((w, wi) => {
+    const days = w.days.map(d => {
+      const isCur = d.id === state.current;
+      const isDone = state.done.has(d.id);
+      return `<button data-day="${d.id}" class="day-cell w-full text-left text-sm px-2 py-1.5 rounded-md flex items-center justify-between gap-2
+        ${isCur ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 font-semibold' : 'hover:bg-slate-100 dark:hover:bg-slate-700'}">
+        <span class="truncate">Day ${d.id}. ${d.title}</span>
+        ${isDone ? '<span class="text-emerald-500">✓</span>' : '<span class="text-slate-300 dark:text-slate-600">○</span>'}
+      </button>`;
+    }).join("");
+    return `<div>
+      <div class="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1">Week ${wi+1}</div>
+      <div class="text-xs text-slate-500 dark:text-slate-400 mb-2">${w.title.replace(/^Week \d+ — /, '')}</div>
+      <div class="space-y-1">${days}</div>
+    </div>`;
+  }).join("");
+
+  document.getElementById("sidebarNav").innerHTML = html;
+  document.getElementById("sidebarNavMobile").innerHTML = html;
+
+  document.querySelectorAll("[data-day]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      goTo(parseInt(btn.dataset.day, 10));
+      document.getElementById("drawer").classList.add("hidden");
+    });
+  });
+}
+
+function renderProgress() {
+  const total = allDays().length;
+  const done = state.done.size;
+  const pct = Math.round(done / total * 100);
+  document.getElementById("progressBar").style.width = pct + "%";
+  document.getElementById("progressBarMobile").style.width = pct + "%";
+  document.getElementById("progressText").textContent = `${done}/${total}`;
+  document.getElementById("progressTextMobile").textContent = `${done}/${total}`;
+}
+
+function escapeHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function inlineMd(s){return escapeHtml(s).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/`([^`]+)`/g, '<code class="px-1 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-sm">$1</code>');}
+
+function renderQuiz(quiz, dayId) {
+  return quiz.map((q, i) => {
+    const key = `q_${dayId}_${i}`;
+    if (q.short) {
+      return `<div class="border border-slate-200 dark:border-slate-700 rounded-lg p-4 bg-white dark:bg-slate-800">
+        <p class="font-semibold mb-3">Q${i+1}. ${inlineMd(q.q)}</p>
+        <div class="flex gap-2">
+          <input class="quiz-short flex-1 rounded border border-slate-300 dark:border-slate-600 bg-transparent px-3 py-2 text-sm" placeholder="답을 입력하세요" data-key="${key}" data-answer="${escapeHtml(q.answer)}" />
+          <button class="quiz-short-check px-3 py-2 rounded bg-slate-800 text-white text-sm dark:bg-slate-200 dark:text-slate-900" data-key="${key}">확인</button>
+        </div>
+        <p class="quiz-feedback mt-3 text-sm hidden" data-key="${key}"></p>
+        <details class="mt-2 text-sm text-slate-500"><summary class="cursor-pointer hover:text-slate-700 dark:hover:text-slate-300">💡 해설 보기</summary><p class="mt-2">${escapeHtml(q.explain||'')}</p></details>
+      </div>`;
+    }
+    const opts = q.options.map((o, oi) => `
+      <button class="quiz-option w-full text-left px-3 py-2 rounded border border-slate-200 dark:border-slate-700 hover:border-emerald-400 text-sm" data-key="${key}" data-answer="${q.answer}" data-choice="${oi}">
+        <span class="font-mono text-slate-400 mr-2">${String.fromCharCode(65+oi)}.</span>${escapeHtml(o)}
+      </button>`).join("");
+    return `<div class="border border-slate-200 dark:border-slate-700 rounded-lg p-4 bg-white dark:bg-slate-800">
+      <p class="font-semibold mb-3">Q${i+1}. ${inlineMd(q.q)}</p>
+      <div class="space-y-2">${opts}</div>
+      <p class="quiz-feedback mt-3 text-sm hidden" data-key="${key}"></p>
+      <details class="mt-2 text-sm text-slate-500"><summary class="cursor-pointer hover:text-slate-700 dark:hover:text-slate-300">💡 해설 보기</summary><p class="mt-2">${escapeHtml(q.explain||'')}</p></details>
+    </div>`;
+  }).join("");
+}
+
+function renderDay(id) {
+  const d = getDay(id);
+  if (!d) return;
+  state.current = id;
+  save();
+
+  const weekIdx = curriculum.weeks.findIndex(w => w.days.some(x => x.id === id));
+  const week = curriculum.weeks[weekIdx];
+
+  const codes = (d.code || []).map((c, i) => `
+    <div class="my-3">
+      <div class="text-xs text-slate-400 mb-1 font-mono">예제 ${i+1}</div>
+      <pre class="language-${c.lang}"><code class="language-${c.lang}">${escapeHtml(c.text)}</code></pre>
+    </div>`).join("");
+
+  const confusions = (d.confusions || []).map(c => `<li class="mb-2 leading-relaxed">${inlineMd(c)}</li>`).join("");
+
+  const html = `
+    <header class="mb-6">
+      <div class="text-xs font-semibold text-emerald-600 dark:text-emerald-400">Week ${weekIdx+1} · ${week.title.replace(/^Week \d+ — /, '')}</div>
+      <h2 class="text-2xl sm:text-3xl font-bold mt-1">Day ${d.id}. ${d.title}</h2>
+    </header>
+
+    <section class="mb-8">
+      <h3 class="text-base font-bold mb-2">🎯 오늘의 목표</h3>
+      <p class="text-slate-700 dark:text-slate-300 leading-relaxed">${inlineMd(d.goal)}</p>
+    </section>
+
+    <section class="mb-10">
+      <h3 class="text-base font-bold mb-3">📖 핵심 개념</h3>
+      <div class="prose-ko text-slate-700 dark:text-slate-300">${
+        d.concept.split(/\n\n+/).map(p => {
+          if (p.trim().startsWith("```")) {
+            const lines = p.split("\n");
+            const lang = lines[0].replace(/```/, "").trim() || "text";
+            const body = lines.slice(1, -1).join("\n");
+            return `<pre class="language-${lang}"><code class="language-${lang}">${escapeHtml(body)}</code></pre>`;
+          }
+          if (p.trim().startsWith("|")) {
+            // simple markdown table
+            const rows = p.trim().split("\n").map(r => r.trim()).filter(r => r);
+            const head = rows[0].split("|").map(x=>x.trim()).filter(Boolean);
+            const body = rows.slice(2).map(r => r.split("|").map(x=>x.trim()).filter(Boolean));
+            return `<div class="overflow-x-auto my-3"><table class="text-sm border-collapse"><thead><tr>${head.map(h=>`<th class="border border-slate-300 dark:border-slate-600 px-3 py-1 bg-slate-100 dark:bg-slate-700 text-left">${escapeHtml(h)}</th>`).join("")}</tr></thead><tbody>${body.map(r=>`<tr>${r.map(c=>`<td class="border border-slate-300 dark:border-slate-600 px-3 py-1">${inlineMd(c)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+          }
+          return `<p>${escapeHtml(p).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/`([^`]+)`/g, '<code class="px-1 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-sm">$1</code>')}</p>`;
+        }).join("")
+      }</div>
+    </section>
+
+    <section class="mb-10">
+      <h3 class="text-base font-bold mb-3">💻 실습 코드</h3>
+      ${codes || '<p class="text-slate-500 text-sm">(코드 예제 없음)</p>'}
+    </section>
+
+    <section class="mb-10">
+      <h3 class="text-base font-bold mb-3">🤔 자주 헷갈리는 것</h3>
+      <ul class="list-disc list-inside text-slate-700 dark:text-slate-300 leading-relaxed pl-2">
+        ${confusions || '<li class="text-slate-400">(없음)</li>'}
+      </ul>
+    </section>
+
+    <section class="mb-10">
+      <h3 class="text-base font-bold mb-3">✏️ 퀴즈</h3>
+      <div class="space-y-3">${renderQuiz(d.quiz || [], d.id)}</div>
+    </section>
+
+    <section class="mb-10">
+      <h3 class="text-base font-bold mb-3">✅ 진도 체크</h3>
+      <p class="text-sm text-slate-500">
+        ${state.done.has(d.id) ? '✓ 이 날은 완료로 표시돼 있어요. 하단에서 취소할 수 있어요.' : '아직 미완료예요. 하단의 \"오늘 완료\" 버튼으로 표시하세요.'}
+      </p>
+    </section>
+  `;
+  document.getElementById("content").innerHTML = html;
+
+  // Prism highlight
+  if (window.Prism) Prism.highlightAll();
+
+  // Quiz handlers
+  document.querySelectorAll(".quiz-option").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const key = btn.dataset.key;
+      const ans = parseInt(btn.dataset.answer, 10);
+      const choice = parseInt(btn.dataset.choice, 10);
+      const right = ans === choice;
+      const fb = document.querySelector(`.quiz-feedback[data-key="${key}"]`);
+      fb.classList.remove("hidden");
+      fb.innerHTML = right
+        ? '<span class="text-emerald-600 dark:text-emerald-400 font-semibold">정답이에요! 🎉</span>'
+        : '<span class="text-rose-600 dark:text-rose-400 font-semibold">아쉬워요. 정답은 ' + String.fromCharCode(65+ans) + '번이에요.</span>';
+      document.querySelectorAll(`.quiz-option[data-key="${key}"]`).forEach(b => {
+        b.classList.remove("ring-2","ring-emerald-500","ring-rose-500");
+        const c = parseInt(b.dataset.choice,10);
+        if (c === ans) b.classList.add("ring-2","ring-emerald-500");
+        else if (c === choice) b.classList.add("ring-2","ring-rose-500");
+      });
+    });
+  });
+  document.querySelectorAll(".quiz-short-check").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const key = btn.dataset.key;
+      const input = document.querySelector(`.quiz-short[data-key="${key}"]`);
+      const userAns = (input.value || "").trim();
+      const correct = (input.dataset.answer || "").trim();
+      const fb = document.querySelector(`.quiz-feedback[data-key="${key}"]`);
+      fb.classList.remove("hidden");
+      const ok = userAns.toLowerCase() === correct.toLowerCase() || correct.split(",").map(s=>s.trim().toLowerCase()).includes(userAns.toLowerCase());
+      fb.innerHTML = ok
+        ? '<span class="text-emerald-600 dark:text-emerald-400 font-semibold">정답이에요! 🎉</span>'
+        : `<span class="text-rose-600 dark:text-rose-400 font-semibold">아쉬워요. 정답: <code class="px-1 bg-slate-100 dark:bg-slate-700 rounded">${escapeHtml(correct)}</code></span>`;
+    });
+  });
+
+  renderSidebar();
+  renderProgress();
+  updateNav();
+
+  // 스크롤 위로
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function updateNav() {
+  const ids = allDays().map(d => d.id);
+  const idx = ids.indexOf(state.current);
+  document.getElementById("prevDay").disabled = idx <= 0;
+  document.getElementById("nextDay").disabled = idx >= ids.length - 1;
+  document.getElementById("markDone").textContent = state.done.has(state.current) ? "완료 취소" : "오늘 완료 ✓";
+  document.getElementById("markDone").classList.toggle("bg-emerald-500", !state.done.has(state.current));
+  document.getElementById("markDone").classList.toggle("bg-slate-400", state.done.has(state.current));
+}
+
+function goTo(id) {
+  if (!getDay(id)) return;
+  renderDay(id);
+}
+
+/* 검색 */
+function openSearch() {
+  document.getElementById("searchModal").classList.remove("hidden");
+  document.getElementById("searchInput").value = "";
+  document.getElementById("searchResults").innerHTML = "";
+  setTimeout(()=>document.getElementById("searchInput").focus(), 50);
+}
+function closeSearch() {
+  document.getElementById("searchModal").classList.add("hidden");
+}
+function runSearch(q) {
+  if (!q) { document.getElementById("searchResults").innerHTML = ""; return; }
+  const lower = q.toLowerCase();
+  const hits = [];
+  allDays().forEach(d => {
+    const corpus = [d.title, d.goal, d.concept, ...(d.confusions||[]), ...(d.code||[]).map(c=>c.text)].join("\n").toLowerCase();
+    if (corpus.includes(lower)) {
+      const idx = corpus.indexOf(lower);
+      const around = corpus.substring(Math.max(0, idx-40), Math.min(corpus.length, idx+lower.length+40));
+      const snippet = around.replace(new RegExp(lower.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'gi'), m => `<mark class="search-hit">${m}</mark>`);
+      hits.push({ id: d.id, title: d.title, snippet });
+    }
+  });
+  document.getElementById("searchResults").innerHTML = hits.length
+    ? hits.map(h => `<button class="search-hit-row block w-full text-left px-3 py-2 rounded hover:bg-slate-100 dark:hover:bg-slate-700" data-day="${h.id}">
+        <div class="text-sm font-semibold">Day ${h.id}. ${escapeHtml(h.title)}</div>
+        <div class="text-xs text-slate-500 truncate">...${h.snippet}...</div>
+      </button>`).join("")
+    : `<div class="text-sm text-slate-400 px-3 py-4">검색 결과 없음</div>`;
+  document.querySelectorAll(".search-hit-row").forEach(r => r.addEventListener("click", () => {
+    goTo(parseInt(r.dataset.day, 10));
+    closeSearch();
+  }));
+}
+
+/* 이벤트 바인딩 */
+document.addEventListener("DOMContentLoaded", () => {
+  load();
+  // dark mode init
+  const saved = localStorage.getItem("goprov14_dark");
+  if (saved === "1") document.documentElement.classList.add("dark");
+
+  renderDay(state.current);
+
+  document.getElementById("prevDay").addEventListener("click", () => {
+    const ids = allDays().map(d => d.id);
+    const idx = ids.indexOf(state.current);
+    if (idx > 0) goTo(ids[idx-1]);
+  });
+  document.getElementById("nextDay").addEventListener("click", () => {
+    const ids = allDays().map(d => d.id);
+    const idx = ids.indexOf(state.current);
+    if (idx < ids.length-1) goTo(ids[idx+1]);
+  });
+  document.getElementById("markDone").addEventListener("click", () => {
+    if (state.done.has(state.current)) state.done.delete(state.current);
+    else state.done.add(state.current);
+    save();
+    renderSidebar();
+    renderProgress();
+    updateNav();
+  });
+  document.getElementById("resetProgress").addEventListener("click", resetProgress);
+  document.getElementById("resetProgressMobile").addEventListener("click", resetProgress);
+
+  document.getElementById("darkToggle").addEventListener("click", () => {
+    document.documentElement.classList.toggle("dark");
+    localStorage.setItem("goprov14_dark", document.documentElement.classList.contains("dark") ? "1" : "0");
+  });
+
+  document.getElementById("hamburger").addEventListener("click", () => {
+    document.getElementById("drawer").classList.remove("hidden");
+  });
+  document.getElementById("drawerBg").addEventListener("click", () => {
+    document.getElementById("drawer").classList.add("hidden");
+  });
+
+  document.getElementById("searchBtn").addEventListener("click", openSearch);
+  document.getElementById("searchBg").addEventListener("click", closeSearch);
+  document.getElementById("searchInput").addEventListener("input", e => runSearch(e.target.value.trim()));
+
+  document.addEventListener("keydown", e => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+      e.preventDefault();
+      openSearch();
+    } else if (e.key === "Escape") {
+      closeSearch();
+    } else if (e.key === "ArrowLeft" && !isSearchOpen()) {
+      const ids = allDays().map(d => d.id);
+      const idx = ids.indexOf(state.current);
+      if (idx > 0) goTo(ids[idx-1]);
+    } else if (e.key === "ArrowRight" && !isSearchOpen()) {
+      const ids = allDays().map(d => d.id);
+      const idx = ids.indexOf(state.current);
+      if (idx < ids.length-1) goTo(ids[idx+1]);
+    }
+  });
+});
+
+function isSearchOpen() {
+  return !document.getElementById("searchModal").classList.contains("hidden");
+}
+function resetProgress() {
+  if (!confirm("정말 모든 진도를 초기화할까요?")) return;
+  state.done.clear();
+  state.current = 1;
+  save();
+  renderDay(1);
+}
+</script>
+
+<!-- Prism JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-go.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-hcl.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-powershell.min.js"></script>
+
+</body>
+</html>
